@@ -1,4 +1,4 @@
-# BI-Safe: Continuous Security Monitoring for Kenyan SMEs
+# Continuous Security Monitoring for Kenyan SMEs
 
 ## Project Summary
 
