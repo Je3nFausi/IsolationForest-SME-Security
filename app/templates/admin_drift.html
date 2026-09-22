@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Model Drift - Admin{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 data-typewriter>Model Drift</h1>
+        <p>Monitor model performance over time</p>
+    </div>
+    <div class="page-header-actions">
+        <button class="btn btn-primary btn-sm" onclick="showToast('🔄 Model retraining started', 'success')">🔄 Retrain Model</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h2>📈 F1-Score Over Time</h2></div>
+    <div class="chart-wrapper" style="height: 300px;">
+        <canvas id="driftChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    new Chart(document.getElementById('driftChart'), {
+        type: 'line',
+        data: {
+            labels: ['Batch 1', 'Batch 2', 'Batch 3', 'Batch 4', 'Batch 5'],
+            datasets: [{
+                label: 'F1-Score',
+                data: [0.85, 0.83, 0.80, 0.72, 0.65],
+                borderColor: '#f43f5e',
+                backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                tension: 0.4,
+                fill: true,
+                borderWidth: 3,
+                pointRadius: 6,
+                pointBackgroundColor: '#e6ff2c',
+                pointBorderColor: '#000',
+                pointBorderWidth: 2
+            }, {
+                label: 'Baseline',
+                data: [0.85, 0.85, 0.85, 0.85, 0.85],
+                borderColor: '#4ade80',
+                borderDash: [6, 6],
+                fill: false,
+                borderWidth: 2,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#8a8a8a', font: { weight: 'bold' } } } },
+            scales: {
+                y: { min: 0, max: 1, grid: { color: '#1f1f1f' }, ticks: { color: '#8a8a8a' } },
+                x: { grid: { display: false }, ticks: { color: '#8a8a8a' } }
+            }
+        }
+    });
+</script>
+{% endblock %}

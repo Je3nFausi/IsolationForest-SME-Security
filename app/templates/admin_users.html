@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Users - Admin{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 data-typewriter>Users</h1>
+        <p>Manage system users</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h2>👥 Registered Users</h2></div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>1</td><td><strong>Jane Wanjiku</strong></td><td>jane@gmail.com</td><td><span class="badge badge-info">Owner</span></td></tr>
+                <tr><td>2</td><td><strong>Michael Victor</strong></td><td>michael@gmail.com</td><td><span class="badge badge-lavender">Admin</span></td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

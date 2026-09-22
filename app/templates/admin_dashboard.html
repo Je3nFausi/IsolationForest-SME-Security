@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - BI-Safe{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Admin Dashboard</h1>
+        <p>System Administrator: {{ user.name }}</p>
+    </div>
+    <div class="page-header-actions">
+        <button class="btn btn-ghost btn-sm" onclick="location.reload()">🔄 Refresh</button>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card mint">
+        <div class="stat-card-label">System Status</div>
+        <div class="stat-card-value" style="font-size: 22px;" id="system-status-value">Running</div>
+        <div class="stat-card-subtext">All services active</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Producer Events</div>
+        <div class="stat-card-value" id="producer-events-value">{{ stats.total_predictions }}</div>
+        <div class="stat-card-subtext">Total streamed</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Datasets Loaded</div>
+        <div class="stat-card-value">3</div>
+        <div class="stat-card-subtext">Available datasets</div>
+    </div>
+    <div class="stat-card amber">
+        <div class="stat-card-label">Alerts Today</div>
+        <div class="stat-card-value">{{ stats.total_alerts }}</div>
+        <div class="stat-card-subtext">Generated alerts</div>
+    </div>
+</div>
+
+<!-- Producer Control Center -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h2>🎛️ Producer Control Center</h2>
+            <p class="card-header-subtext">Manage the network traffic simulation</p>
+        </div>
+    </div>
+
+    <div class="stats-grid" style="margin-bottom: 20px;">
+        <div>
+            <div class="stat-card-label">Producer Status</div>
+            <div style="font-weight: 700; color: var(--mint); font-size: 16px; margin-top: 6px;" id="producer-status-display">
+                ✅ Running
+            </div>
+        </div>
+        <div>
+            <div class="stat-card-label">Traffic Rate</div>
+            <div style="font-weight: 700; font-size: 16px; margin-top: 6px;" id="traffic-rate-display">
+                {{ status.traffic_rate if status else 10 }} events/sec
+            </div>
+        </div>
+        <div>
+            <div class="stat-card-label">Batch Size</div>
+            <div style="font-weight: 700; font-size: 16px; margin-top: 6px;" id="batch-size-display">
+                {{ status.batch_size if status else 100 }} events
+            </div>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn btn-success" onclick="producerAction('start')">▶️ Start</button>
+        <button class="btn btn-warning" onclick="producerAction('pause')">⏸️ Pause</button>
+        <button class="btn btn-danger" onclick="producerAction('stop')">⏹️ Stop</button>
+        <button class="btn btn-accent" onclick="toggleConfig()">⚙️ Configure</button>
+    </div>
+
+    <div class="config-panel" id="config-panel">
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--text);">⚙️ Configure Producer</h3>
+        <div class="config-grid">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="config-rate">Traffic Rate (events/sec)</label>
+                <input type="number" id="config-rate" value="10" min="1" max="1000">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="config-batch">Batch Size</label>
+                <input type="number" id="config-batch" value="100" min="1" max="10000">
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary btn-sm" onclick="saveConfig()">💾 Save Configuration</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleConfig()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Dataset Management -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h2>📦 Dataset Management</h2>
+            <p class="card-header-subtext">Datasets used for model training</p>
+        </div>
+        <button class="btn btn-accent btn-sm" onclick="uploadDataset()">📤 Upload Dataset</button>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Dataset Name</th>
+                    <th>Rows</th>
+                    <th>Features</th>
+                    <th>Attack Types</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>CIC-IDS-2017</strong></td>
+                    <td>2.8M</td>
+                    <td>79</td>
+                    <td>7</td>
+                    <td><span class="badge badge-low">Loaded</span></td>
+                </tr>
+                <tr>
+                    <td><strong>UNSW-NB15</strong></td>
+                    <td>2.5M</td>
+                    <td>49</td>
+                    <td>9</td>
+                    <td><span class="badge badge-low">Loaded</span></td>
+                </tr>
+                <tr>
+                    <td><strong>NSL-KDD</strong></td>
+                    <td>125K</td>
+                    <td>41</td>
+                    <td>4</td>
+                    <td><span class="badge badge-low">Loaded</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Model Drift Monitor -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h2>📈 Model Drift Monitor</h2>
+            <p class="card-header-subtext">Track F1-score performance over time</p>
+        </div>
+        <button class="btn btn-accent btn-sm" onclick="retrainModel()">🔄 Retrain Model</button>
+    </div>
+
+    <div class="chart-wrapper" style="height: 300px;">
+        <canvas id="driftChart"></canvas>
+    </div>
+</div>
+
+<div id="toast"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // ---- Drift Chart ----
+    const driftCtx = document.getElementById('driftChart');
+    const driftGradient = driftCtx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+    driftGradient.addColorStop(0, 'rgba(239, 68, 68, 0.3)');
+    driftGradient.addColorStop(1, 'rgba(239, 68, 68, 0.02)');
+
+    new Chart(driftCtx, {
+        type: 'line',
+        data: {
+            labels: ['Batch 1', 'Batch 2', 'Batch 3', 'Batch 4', 'Batch 5'],
+            datasets: [{
+                label: 'F1-Score',
+                data: [0.85, 0.83, 0.80, 0.72, 0.65],
+                borderColor: '#ef4444',
+                backgroundColor: driftGradient,
+                tension: 0.4,
+                fill: true,
+                borderWidth: 2.5,
+                pointRadius: 6,
+                pointBackgroundColor: '#ef4444',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 8,
+            }, {
+                label: 'Baseline',
+                data: [0.85, 0.85, 0.85, 0.85, 0.85],
+                borderColor: '#10b981',
+                borderDash: [6, 6],
+                fill: false,
+                borderWidth: 2,
+                pointRadius: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { padding: 16, font: { size: 12, family: 'Inter' }, usePointStyle: true }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false, min: 0, max: 1,
+                    grid: { color: '#f1f5f9' },
+                    ticks: { font: { size: 11, family: 'Inter' }, color: '#64748b' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 11, family: 'Inter' }, color: '#64748b' }
+                }
+            }
+        }
+    });
+
+    // ---- Toast ----
+    function showToast(message, color = '#0f2c4c') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.style.background = color;
+        toast.style.display = 'block';
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => { toast.style.display = 'none'; }, 3500);
+    }
+
+    // ---- Producer control ----
+    async function producerAction(action) {
+        try {
+            const res = await fetch(`/api/producer/${action}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                const colorMap = { running: '#10b981', paused: '#f59e0b', stopped: '#ef4444' };
+                showToast('✅ ' + data.message, colorMap[data.status] || '#0f2c4c');
+                const display = document.getElementById('producer-status-display');
+                const icons = { running: '✅', paused: '⏸️', stopped: '⛔' };
+                display.textContent = `${icons[data.status]} ${data.status.charAt(0).toUpperCase() + data.status.slice(1)}`;
+                display.style.color = colorMap[data.status];
+            }
+        } catch {
+            showToast('❌ Network error', '#ef4444');
+        }
+    }
+
+    // ---- Config ----
+    function toggleConfig() {
+        document.getElementById('config-panel').classList.toggle('active');
+    }
+
+    async function saveConfig() {
+        const traffic_rate = document.getElementById('config-rate').value;
+        const batch_size = document.getElementById('config-batch').value;
+        try {
+            const res = await fetch('/api/producer/configure', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ traffic_rate, batch_size }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('✅ ' + data.message, '#10b981');
+                document.getElementById('traffic-rate-display').textContent = data.traffic_rate + ' events/sec';
+                document.getElementById('batch-size-display').textContent = data.batch_size + ' events';
+                toggleConfig();
+            }
+        } catch {
+            showToast('❌ Failed to save', '#ef4444');
+        }
+    }
+
+    // ---- Datasets ----
+    function uploadDataset() {
+        showToast('📤 Dataset upload dialog (demo)', '#3b82f6');
+    }
+
+    // ---- Model retrain ----
+    async function retrainModel() {
+        try {
+            const res = await fetch('/api/model/retrain', { method: 'POST' });
+            const data = await res.json();
+            showToast('✅ ' + data.message, '#10b981');
+        } catch {
+            showToast('❌ Retraining failed', '#ef4444');
+        }
+    }
+
+    // ---- Load producer status ----
+    async function loadProducerStatus() {
+        try {
+            const res = await fetch('/api/producer/status');
+            const data = await res.json();
+            const display = document.getElementById('producer-status-display');
+            const icons = { running: '✅', paused: '⏸️', stopped: '⛔' };
+            const colorMap = { running: '#10b981', paused: '#f59e0b', stopped: '#ef4444' };
+            display.textContent = `${icons[data.producer_status]} ${data.producer_status.charAt(0).toUpperCase() + data.producer_status.slice(1)}`;
+            display.style.color = colorMap[data.producer_status];
+            document.getElementById('traffic-rate-display').textContent = data.traffic_rate + ' events/sec';
+            document.getElementById('batch-size-display').textContent = data.batch_size + ' events';
+        } catch { /* silent */ }
+    }
+
+    loadProducerStatus();
+</script>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Login - BI-Safe{% endblock %}
+{% block auth_content %}
+<div class="auth-page">
+    <div class="auth-left">
+        <div class="auth-left-content">
+            <h1>Continuous security for <span>Kenyan SMEs</span></h1>
+            <p>Real-time anomaly detection. Protect your business data.</p>
+        </div>
+    </div>
+    <div class="auth-right">
+        <h2>Welcome back</h2>
+        <p class="auth-right-subtitle">Sign in to your dashboard</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required placeholder="you@gmail.com">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="Your password">
+            </div>
+            <button type="submit" class="btn btn-primary">Sign In</button>
+        </form>
+
+        <p class="auth-switch">Don't have an account? <a href="/register">Create one</a></p>
+    </div>
+</div>
+{% endblock %}

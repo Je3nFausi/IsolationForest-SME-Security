@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BI-Safe{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Security Dashboard</h1>
+        <p>Welcome back, {{ user.name }}</p>
+    </div>
+    <div class="page-header-actions">
+        <button class="btn btn-ghost btn-sm" onclick="location.reload()">🔄 Refresh</button>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card mint">
+        <div class="stat-card-label">Security Score</div>
+        <div class="stat-card-value">{{ stats.security_score }}<span style="font-size: 18px; color: var(--text-muted);">/100</span></div>
+        <div class="stat-card-subtext">Overall health</div>
+    </div>
+    <div class="stat-card amber">
+        <div class="stat-card-label">Alerts Today</div>
+        <div class="stat-card-value">{{ stats.total_alerts }}</div>
+        <div class="stat-card-subtext">Active alerts</div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-card-label">Threats Detected</div>
+        <div class="stat-card-value">{{ stats.total_anomalies }}</div>
+        <div class="stat-card-subtext">Total anomalies</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Feedback Given</div>
+        <div class="stat-card-value">{{ stats.total_feedback }}</div>
+        <div class="stat-card-subtext">Your responses</div>
+    </div>
+</div>
+
+<div class="chart-grid">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2>⚠️ Alerts by Priority</h2>
+                <p class="card-header-subtext">Distribution of alerts</p>
+            </div>
+        </div>
+        <div class="chart-wrapper">
+            <canvas id="priorityChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2>📊 Traffic Overview</h2>
+                <p class="card-header-subtext">Normal vs anomalies</p>
+            </div>
+        </div>
+        <div class="chart-wrapper">
+            <canvas id="trafficChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="card recommendations">
+    <div class="card-header">
+        <h2>📋 Recommended Actions</h2>
+    </div>
+    <ul class="recommendations-list">
+        <li class="recommendation-item high">
+            <span class="recommendation-icon">🔴</span>
+            High Priority: Enable MFA on your email account
+        </li>
+        <li class="recommendation-item medium">
+            <span class="recommendation-icon">🟡</span>
+            Medium Priority: Back up your customer list this Friday
+        </li>
+        <li class="recommendation-item low">
+            <span class="recommendation-icon">🟢</span>
+            Low Priority: Review staff training on phishing
+        </li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    new Chart(document.getElementById('priorityChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['High', 'Medium', 'Low'],
+            datasets: [{
+                data: [{{ stats.high_alerts }}, {{ stats.medium_alerts }}, {{ stats.low_alerts }}],
+                backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    new Chart(document.getElementById('trafficChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Normal', 'Anomalies'],
+            datasets: [{
+                label: 'Events',
+                data: [{{ stats.total_predictions - stats.total_anomalies }}, {{ stats.total_anomalies }}],
+                backgroundColor: ['#10b981', '#ef4444'],
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+</script>
+{% endblock %}

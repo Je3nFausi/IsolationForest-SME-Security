@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Producer - Admin{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 data-typewriter>Producer</h1>
+        <p>Manage the network traffic simulation</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h2>🎛️ Producer Control</h2></div>
+    <div class="stats-grid">
+        <div>
+            <div class="stat-card-label">Status</div>
+            <div class="stat-card-value green" style="font-size: 22px;">Running</div>
+        </div>
+        <div>
+            <div class="stat-card-label">Rate</div>
+            <div class="stat-card-value" style="font-size: 22px;">10/sec</div>
+        </div>
+        <div>
+            <div class="stat-card-label">Events</div>
+            <div class="stat-card-value" style="font-size: 22px;">0</div>
+        </div>
+    </div>
+    <div class="btn-group">
+        <button class="btn btn-success" onclick="showToast('▶️ Producer started', 'success')">▶️ Start</button>
+        <button class="btn btn-warning" onclick="showToast('⏸️ Producer paused', 'warning')">⏸️ Pause</button>
+        <button class="btn btn-danger" onclick="showToast('⏹️ Producer stopped', 'error')">⏹️ Stop</button>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Connect Network - BI-Safe{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 data-typewriter>Connect Network</h1>
+        <p>Link your business network to BI-Safe</p>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="card">
+    <div class="card-header"><h2>🔌 New Network Connection</h2></div>
+    <p style="color: var(--muted); margin-bottom: 24px;">
+        Connect your business network so BI-Safe can monitor it for anomalies in real time.
+    </p>
+    <form method="POST" action="/connect">
+        <div class="form-group">
+            <label for="network_name">Network Name</label>
+            <input type="text" id="network_name" name="network_name" required
+                   placeholder="e.g., Mama Salons Main Office">
+        </div>
+        <div class="form-group">
+            <label for="ip_range">IP Range</label>
+            <input type="text" id="ip_range" name="ip_range" required
+                   placeholder="e.g., 192.168.1.0/24">
+        </div>
+        <div class="form-group">
+            <label for="sensor_key">Sensor API Key</label>
+            <input type="text" id="sensor_key" name="sensor_key" required
+                   placeholder="Enter key from BI-Safe sensor">
+            <small class="form-hint">Provided when you install the network sensor.</small>
+        </div>
+        <button type="submit" class="btn btn-primary">🔌 Connect Network</button>
+    </form>
+</div>
+
+{% if networks %}
+<div class="card">
+    <div class="card-header"><h2>📡 Connected Networks</h2></div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>IP Range</th>
+                    <th>Status</th>
+                    <th>Events</th>
+                    <th>Connected</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in networks %}
+                <tr>
+                    <td><strong>{{ n.network_name }}</strong></td>
+                    <td>{{ n.ip_range }}</td>
+                    <td><span class="badge badge-low">{{ n.status }}</span></td>
+                    <td>{{ n.events_processed }}</td>
+                    <td>{{ n.connected_at }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header"><h2>📖 How It Works</h2></div>
+    <ol style="color: var(--muted); padding-left: 20px; line-height: 2;">
+        <li>Install the BI-Safe network sensor on your router or gateway</li>
+        <li>Enter the sensor API key above</li>
+        <li>Choose the IP range to monitor</li>
+        <li>Click "Connect Network"</li>
+        <li>BI-Safe starts monitoring your network in real time</li>
+        <li>When an anomaly is detected, you receive SMS/WhatsApp alerts</li>
+    </ol>
+</div>
+{% endblock %}

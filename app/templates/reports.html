@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Reports - BI-Safe{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 data-typewriter>Reports</h1>
+        <p>Security performance overview</p>
+    </div>
+    <div class="page-header-actions">
+        <button class="btn btn-primary btn-sm" onclick="showToast('📥 Report downloaded', 'success')">📥 Download Report</button>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-card-label">Total Events</div>
+        <div class="stat-card-value">{{ stats.total_predictions }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Anomalies</div>
+        <div class="stat-card-value red">{{ stats.total_anomalies }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Alerts</div>
+        <div class="stat-card-value orange">{{ stats.total_alerts }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Security Score</div>
+        <div class="stat-card-value green">{{ stats.security_score }}%</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h2>📈 Report History</h2></div>
+    <p style="color: var(--muted); padding: 20px;">Report generation coming soon.</p>
+</div>
+{% endblock %}

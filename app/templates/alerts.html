@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Alerts - BI-Safe{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 data-typewriter>Alerts</h1>
+        <p>All detected anomalies</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>⚠️ Alert History</h2>
+    </div>
+    {% if alerts %}
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Priority</th>
+                    <th>Anomaly Score</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alert in alerts %}
+                <tr>
+                    <td>#{{ alert.alert_id or alert.id }}</td>
+                    <td><span class="badge badge-{{ alert.priority|lower }}">{{ alert.priority }}</span></td>
+                    <td>{{ "%.4f"|format(alert.anomaly_score or 0) }}</td>
+                    <td>{{ alert.status or 'Pending' }}</td>
+                    <td>
+                        <button class="btn btn-success btn-sm" onclick="confirmAlert({{ alert.id }})">✅ Confirm</button>
+                        <button class="btn btn-danger btn-sm" onclick="denyAlert({{ alert.id }})">❌ Deny</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="color: var(--muted); padding: 40px; text-align: center;">No alerts yet.</p>
+    {% endif %}
+</div>
+
+{% endblock %}
+{% block extra_scripts %}
+<script>
+    function confirmAlert(id) { showToast('✅ Alert ' + id + ' confirmed', 'success'); }
+    function denyAlert(id) { showToast('❌ Alert ' + id + ' denied', 'error'); }
+</script>
+{% endblock %}

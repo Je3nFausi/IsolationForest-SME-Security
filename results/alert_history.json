@@ -1,0 +1,182 @@
+[
+  {
+    "alert_id": 1,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 825,
+    "anomaly_score": -0.0377737588735036,
+    "actual": 1,
+    "priority": "LOW",
+    "message": "\ud83d\udfe2 BI-SAFE LOW PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0378\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 2,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 847,
+    "anomaly_score": -0.0443811722933125,
+    "actual": 1,
+    "priority": "LOW",
+    "message": "\ud83d\udfe2 BI-SAFE LOW PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0444\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 3,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 850,
+    "anomaly_score": -0.1124321518048762,
+    "actual": 1,
+    "priority": "MEDIUM",
+    "message": "\ud83d\udfe1 BI-SAFE MEDIUM PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.1124\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 4,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 887,
+    "anomaly_score": -0.0757107235171693,
+    "actual": 1,
+    "priority": "MEDIUM",
+    "message": "\ud83d\udfe1 BI-SAFE MEDIUM PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0757\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 5,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 918,
+    "anomaly_score": -0.0410481918743279,
+    "actual": 1,
+    "priority": "LOW",
+    "message": "\ud83d\udfe2 BI-SAFE LOW PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0410\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 6,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 930,
+    "anomaly_score": -0.0979664084425647,
+    "actual": 1,
+    "priority": "MEDIUM",
+    "message": "\ud83d\udfe1 BI-SAFE MEDIUM PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0980\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 7,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 946,
+    "anomaly_score": -0.0633790021617668,
+    "actual": 1,
+    "priority": "MEDIUM",
+    "message": "\ud83d\udfe1 BI-SAFE MEDIUM PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0634\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 8,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 986,
+    "anomaly_score": -0.0182635852660242,
+    "actual": 1,
+    "priority": "LOW",
+    "message": "\ud83d\udfe2 BI-SAFE LOW PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0183\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 9,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 1007,
+    "anomaly_score": -0.0127100494721674,
+    "actual": 1,
+    "priority": "LOW",
+    "message": "\ud83d\udfe2 BI-SAFE LOW PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0127\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 10,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 1037,
+    "anomaly_score": -0.0509341014225024,
+    "actual": 1,
+    "priority": "MEDIUM",
+    "message": "\ud83d\udfe1 BI-SAFE MEDIUM PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0509\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 11,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 1039,
+    "anomaly_score": -0.0021983525768416,
+    "actual": 0,
+    "priority": "LOW",
+    "message": "\ud83d\udfe2 BI-SAFE LOW PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0022\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 12,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 1043,
+    "anomaly_score": -0.0466466897502482,
+    "actual": 1,
+    "priority": "LOW",
+    "message": "\ud83d\udfe2 BI-SAFE LOW PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0466\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 13,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 1114,
+    "anomaly_score": -0.090527003389321,
+    "actual": 1,
+    "priority": "MEDIUM",
+    "message": "\ud83d\udfe1 BI-SAFE MEDIUM PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0905\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 14,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 1137,
+    "anomaly_score": -0.0551212423423188,
+    "actual": 1,
+    "priority": "MEDIUM",
+    "message": "\ud83d\udfe1 BI-SAFE MEDIUM PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0551\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 15,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 1176,
+    "anomaly_score": -0.080005449425437,
+    "actual": 1,
+    "priority": "MEDIUM",
+    "message": "\ud83d\udfe1 BI-SAFE MEDIUM PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0800\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 16,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 1181,
+    "anomaly_score": -0.0090957901806045,
+    "actual": 1,
+    "priority": "LOW",
+    "message": "\ud83d\udfe2 BI-SAFE LOW PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0091\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 17,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 1191,
+    "anomaly_score": -0.0590832542603358,
+    "actual": 1,
+    "priority": "MEDIUM",
+    "message": "\ud83d\udfe1 BI-SAFE MEDIUM PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0591\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 18,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 1204,
+    "anomaly_score": -0.0556447922041181,
+    "actual": 1,
+    "priority": "MEDIUM",
+    "message": "\ud83d\udfe1 BI-SAFE MEDIUM PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0556\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 19,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 1232,
+    "anomaly_score": -0.0196426312599469,
+    "actual": 1,
+    "priority": "LOW",
+    "message": "\ud83d\udfe2 BI-SAFE LOW PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0196\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  },
+  {
+    "alert_id": 20,
+    "timestamp": "2026-09-22T08:33:21.190038",
+    "offset": 1239,
+    "anomaly_score": -0.0825549036217756,
+    "actual": 1,
+    "priority": "MEDIUM",
+    "message": "\ud83d\udfe1 BI-SAFE MEDIUM PRIORITY ALERT\nTime: 2026-09-22T08:33:21.190038\nAnomaly Score: -0.0826\nAction Required: Review your dashboard immediately.\nReply YES if this was you, or NO if it was not."
+  }
+]

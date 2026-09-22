@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BI-Safe{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    {% if session.user %}
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="sidebar-brand-icon">🛡️</div>
+                <div class="sidebar-brand-text">
+                    <h1>BI-Safe</h1>
+                    <p>Security Monitor</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+    {% if session.user.role == 'owner' %}
+        <a href="{{ url_for('owner_dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'owner_dashboard' %}active{% endif %}">
+            <span>📊</span> Dashboard
+        </a>
+        <a href="{{ url_for('alerts') }}" class="sidebar-nav-item {% if request.endpoint == 'alerts' %}active{% endif %}">
+            <span>⚠️</span> Alerts
+        </a>
+        <a href="{{ url_for('reports') }}" class="sidebar-nav-item {% if request.endpoint == 'reports' %}active{% endif %}">
+            <span>📈</span> Reports
+        </a>
+        <a href="{{ url_for('connect') }}" class="sidebar-nav-item {% if request.endpoint == 'connect' %}active{% endif %}">
+            <span>🔌</span> Connect Network
+        </a>
+        <a href="{{ url_for('settings') }}" class="sidebar-nav-item {% if request.endpoint == 'settings' %}active{% endif %}">
+            <span>⚙️</span> Settings
+        </a>
+    {% else %}
+        <a href="{{ url_for('admin_dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+            <span>📊</span> Overview
+        </a>
+        <a href="{{ url_for('admin_producer') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_producer' %}active{% endif %}">
+            <span>🎛️</span> Producer
+        </a>
+        <a href="{{ url_for('admin_datasets') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_datasets' %}active{% endif %}">
+            <span>📦</span> Datasets
+        </a>
+        <a href="{{ url_for('admin_drift') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_drift' %}active{% endif %}">
+            <span>📈</span> Model Drift
+        </a>
+        <a href="{{ url_for('admin_users') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_users' %}active{% endif %}">
+            <span>👥</span> Users
+        </a>
+    {% endif %}
+</nav>
+            
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="sidebar-user-avatar">
+                        {{ session.user.name[0]|upper }}
+                    </div>
+                    <div class="sidebar-user-info">
+                        <p>{{ session.user.name }}</p>
+                        <span>{{ session.user.role }}</span>
+                    </div>
+                </div>
+                <a href="/logout" class="sidebar-logout">🚪 Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-area">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% else %}
+        {% block auth_content %}{% endblock %}
+    {% endif %}
+
+    {% block extra_scripts %}{% endblock %}
+    <script src="/static/js/interactions.js"></script>
+</body>
+</html>

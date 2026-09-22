@@ -4,6 +4,7 @@ Kafka Consumer for BI-Safe
 
 This script consumes network traffic events from a Kafka topic and
 runs real-time anomaly detection using the trained Isolation Forest model.
+It saves each prediction to the SQLite database.
 
 Requirements:
     pip install pandas numpy scikit-learn joblib kafka-python
@@ -12,6 +13,7 @@ Run:
     python scripts/consumer.py
 """
 
+import sys
 import os
 import json
 import time
@@ -21,8 +23,14 @@ import numpy as np
 from kafka import KafkaConsumer
 
 
-# Get the project root directory
+# Get the project root directory FIRST
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Now add the app folder to the path for imports
+sys.path.insert(0, os.path.join(BASE_DIR, "app"))
+from db import insert_prediction, clear_predictions_and_alerts
+
+
 DATA_DIR = os.path.join(BASE_DIR, "data")
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 RESULTS_DIR = os.path.join(BASE_DIR, "results")
@@ -69,21 +77,17 @@ def create_kafka_consumer():
 
 def detect_anomaly(model, event):
     """Run anomaly detection on a single event."""
-    # Extract features (drop target and label columns)
     features = {
         k: v for k, v in event.items()
-        if k not in [TARGET_COLUMN, "prediction", "anomaly_score"]
+        if k not in [TARGET_COLUMN, "prediction", "anomaly_score", "attack_type"]
     }
     X = pd.DataFrame([features])
-
-    # Ensure all values are numeric
     X = X.select_dtypes(include=[np.number])
 
-    # Predict
     prediction = model.predict(X)[0]
     score = model.decision_function(X)[0]
 
-    # Convert: Isolation Forest returns 1=normal, -1=anomaly
+    # Isolation Forest: 1 = normal, -1 = anomaly
     is_anomaly = 1 if prediction == -1 else 0
 
     return is_anomaly, score
@@ -110,7 +114,19 @@ def consume_events(consumer, model, max_events=None):
             if is_anomaly:
                 anomalies += 1
 
-            # Save result
+            # Save to database
+            try:
+                insert_prediction(
+                    offset=message.offset,
+                    anomaly_score=score,
+                    is_anomaly=is_anomaly,
+                    actual=event.get(TARGET_COLUMN),
+                    processing_time_ms=None,
+                )
+            except Exception as e:
+                print(f"  [DB Error] Could not save prediction: {e}")
+
+            # Keep in memory for CSV export
             results.append({
                 "offset": message.offset,
                 "prediction": is_anomaly,
@@ -162,6 +178,15 @@ def save_results(results):
 
 def main():
     """Main function to run the consumer."""
+    # Ask if user wants to clear old data
+    print("\n" + "=" * 60)
+    print("BI-Safe Consumer")
+    print("=" * 60)
+    clear = input("Clear existing predictions and alerts? (y/n): ").strip().lower()
+    if clear == "y":
+        clear_predictions_and_alerts()
+        print("  Cleared existing data.")
+
     # Load model
     model_path = os.path.join(MODEL_DIR, "isolation_forest_small.pkl")
     if not os.path.exists(model_path):
@@ -179,7 +204,7 @@ def main():
     # Consume events
     results = consume_events(consumer, model, max_events=1000)
 
-    # Save results
+    # Save results to CSV
     save_results(results)
 
 
