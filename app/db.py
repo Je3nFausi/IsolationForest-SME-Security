@@ -203,3 +203,39 @@ def clear_predictions_and_alerts():
     conn.commit()
     conn.close()
     return True
+
+def insert_network(sme_id, network_name, ip_range, sensor_key):
+    """Insert a new network connection for an SME."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO networks (sme_id, network_name, ip_range, sensor_key, status)
+        VALUES (?, ?, ?, ?, 'connected')
+    """, (sme_id, network_name, ip_range, sensor_key))
+    network_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return network_id
+
+
+def get_networks_for_sme(sme_id):
+    """Get all networks connected for an SME."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM networks WHERE sme_id = ? ORDER BY id DESC", (sme_id,))
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def update_network_activity(network_id, events_processed):
+    """Update the last activity and event count for a network."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE networks SET last_activity = CURRENT_TIMESTAMP, events_processed = ?
+        WHERE id = ?
+    """, (events_processed, network_id))
+    conn.commit()
+    conn.close()
+    return True

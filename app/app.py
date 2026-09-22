@@ -184,14 +184,6 @@ def reports():
     return render_template("reports.html", stats=stats, user=user)
 
 
-@app.route("/connect")
-@login_required(role="owner")
-def connect():
-    """SME Owner network connection page."""
-    user = get_current_user()
-    return render_template("connect.html", user=user)
-
-
 @app.route("/settings")
 @login_required(role="owner")
 def settings():
