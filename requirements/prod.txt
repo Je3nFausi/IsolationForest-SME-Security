@@ -1,0 +1,3 @@
+# Base plus a production WSGI server (works on Windows and Linux)
+-r base.txt
+waitress

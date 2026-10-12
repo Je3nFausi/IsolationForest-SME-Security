@@ -1,0 +1,9 @@
+# Base plus development and analysis tools
+-r base.txt
+pytest
+ruff
+black
+matplotlib
+seaborn
+jupyter
+faker

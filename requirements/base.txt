@@ -1,0 +1,11 @@
+# Everything needed to run BI-Safe (dashboard, Kafka, ML pipeline, API)
+flask
+flask-session
+werkzeug
+kafka-python
+pandas
+numpy
+scipy
+scikit-learn
+joblib
+requests
