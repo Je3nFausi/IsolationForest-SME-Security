@@ -278,26 +278,64 @@ def api_trends():
 def api_drift():
     return jsonify(get_drift_history())
 
+import subprocess
+import signal
+
+PRODUCER_PID_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "producer.pid"
+)
+
 
 @app.route("/api/producer/start", methods=["POST"])
 @login_required(role="admin")
 def producer_start():
+    """Launch the controlled producer as a background process."""
+    # If already running, do nothing
+    if os.path.exists(PRODUCER_PID_FILE):
+        try:
+            with open(PRODUCER_PID_FILE) as f:
+                pid = int(f.read().strip())
+            os.kill(pid, 0)
+            return jsonify({"success": True, "status": "running",
+                            "message": "Producer already running"})
+        except (OSError, ValueError):
+            try:
+                os.remove(PRODUCER_PID_FILE)
+            except OSError:
+                pass
+
+    script = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "scripts", "producer_controlled.py"
+    )
+    proc = subprocess.Popen([sys.executable, script])
+    with open(PRODUCER_PID_FILE, "w") as f:
+        f.write(str(proc.pid))
+
     update_producer_status("running")
-    return jsonify({"success": True, "status": "running", "message": "Producer started"})
-
-
-@app.route("/api/producer/pause", methods=["POST"])
-@login_required(role="admin")
-def producer_pause():
-    update_producer_status("paused")
-    return jsonify({"success": True, "status": "paused", "message": "Producer paused"})
+    return jsonify({"success": True, "status": "running",
+                    "message": "Producer started"})
 
 
 @app.route("/api/producer/stop", methods=["POST"])
 @login_required(role="admin")
 def producer_stop():
+    """Stop the producer."""
     update_producer_status("stopped")
-    return jsonify({"success": True, "status": "stopped", "message": "Producer stopped"})
+    if os.path.exists(PRODUCER_PID_FILE):
+        try:
+            with open(PRODUCER_PID_FILE) as f:
+                pid = int(f.read().strip())
+            os.kill(pid, signal.SIGTERM)
+        except (OSError, ValueError):
+            pass
+        try:
+            os.remove(PRODUCER_PID_FILE)
+        except OSError:
+            pass
+    return jsonify({"success": True, "status": "stopped",
+                    "message": "Producer stopped"})
 
 
 @app.route("/api/producer/configure", methods=["POST"])
