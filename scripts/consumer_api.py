@@ -87,7 +87,7 @@ def dry_run(n=5):
         )
 
 
-def run(max_events):
+def run(max_events, topic=KAFKA_TOPIC):
     from kafka import KafkaConsumer
 
     sys.path.insert(0, os.path.join(BASE_DIR, "app"))
@@ -99,7 +99,7 @@ def run(max_events):
         print("  Cleared existing data.")
 
     consumer = KafkaConsumer(
-        KAFKA_TOPIC,
+        topic,
         bootstrap_servers=[KAFKA_BROKER],
         group_id=CONSUMER_GROUP,
         auto_offset_reset="earliest",
@@ -108,7 +108,7 @@ def run(max_events):
         api_version=(0, 10, 1),
         consumer_timeout_ms=10000,
     )
-    print(f"Connected to Kafka topic '{KAFKA_TOPIC}'. Ctrl+C to stop.\n")
+    print(f"Connected to Kafka topic '{topic}'. Ctrl+C to stop.\n")
 
     results = []
     processed = anomalies = errors_in_a_row = 0
@@ -170,6 +170,7 @@ def run(max_events):
 def main():
     parser = argparse.ArgumentParser(description="BI-Safe API-based consumer.")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--topic", default=KAFKA_TOPIC)
     parser.add_argument("--max-events", type=int, default=1000)
     args = parser.parse_args()
 
@@ -181,7 +182,7 @@ def main():
     if args.dry_run:
         dry_run()
     else:
-        run(args.max_events)
+        run(args.max_events, args.topic)
 
 
 if __name__ == "__main__":

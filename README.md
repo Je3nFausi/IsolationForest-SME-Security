@@ -206,3 +206,7 @@ End-to-end check on the first 1,000 small events: recall 0.68, precision 0.71, 3
 - `alert_trigger.py` still reads `consumer_results.csv` and writes a JSON log. It does not write to the database. `alert_to_db.py` does.
 - The dashboard's own producer and retrain controls still use the original flow.
 - The `alerts` table's `timestamp`, `sme_id` and `prediction_id` columns are not filled.
+
+### Threshold check on the medium dataset
+
+The alert thresholds (HIGH below -0.05, MEDIUM below -0.03) were calibrated on the small dataset and then applied, unchanged, to the first 1,000 events of the medium dataset (served by the medium Pipeline). 55 events were flagged: 4 HIGH, 9 MEDIUM and 42 LOW. All 13 HIGH and MEDIUM alerts were true attacks, against 43% of LOW alerts (66% on the small dataset). End-to-end recall was 0.58 and precision 0.56 (offline: 0.515 and 0.462). These are small samples, so the results are indicative only. The large dataset has not been tested.

@@ -58,6 +58,7 @@ def main():
     parser.add_argument("--size", choices=["small", "medium", "large"], default="small")
     parser.add_argument("--max-events", type=int, default=1000)
     parser.add_argument("--delay", type=float, default=0.01)
+    parser.add_argument("--topic", default=KAFKA_TOPIC)
     parser.add_argument("--dry-run", action="store_true",
                         help="Print the first 2 events and exit (no Kafka).")
     args = parser.parse_args()
@@ -78,11 +79,11 @@ def main():
         api_version=(0, 10, 1),
         request_timeout_ms=5000,
     )
-    print(f"Connected to Kafka. Streaming to topic '{KAFKA_TOPIC}'...")
+    print(f"Connected to Kafka. Streaming to topic '{args.topic}'...")
 
     start = time.time()
     for i, event in enumerate(events):
-        producer.send(KAFKA_TOPIC, value=event)
+        producer.send(args.topic, value=event)
         if (i + 1) % 100 == 0:
             print(f"  Sent {i + 1:,} events")
         time.sleep(args.delay)
