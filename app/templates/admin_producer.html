@@ -25,9 +25,32 @@
         </div>
     </div>
     <div class="btn-group">
-        <button class="btn btn-success" onclick="showToast('▶️ Producer started', 'success')">▶️ Start</button>
-        <button class="btn btn-warning" onclick="showToast('⏸️ Producer paused', 'warning')">⏸️ Pause</button>
-        <button class="btn btn-danger" onclick="showToast('⏹️ Producer stopped', 'error')">⏹️ Stop</button>
+        <button class="btn btn-success" onclick="producerAction('start')">▶️ Start</button>
+        <button class="btn btn-warning" onclick="producerAction('pause')">⏸️ Pause</button>
+        <button class="btn btn-danger" onclick="producerAction('stop')">⏹️ Stop</button>
     </div>
 </div>
+
+{% block extra_scripts %}
+<script>
+    async function producerAction(action) {
+        try {
+            const res = await fetch(`/api/producer/${action}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                const colorMap = { running: '#10b981', paused: '#f59e0b', stopped: '#ef4444' };
+                const icons = { running: '✅', paused: '⏸️', stopped: '⛔' };
+                const el = document.getElementById('producer-status-display');
+                if (el) {
+                    el.textContent = `${icons[data.status]} ${data.status.charAt(0).toUpperCase() + data.status.slice(1)}`;
+                    el.style.color = colorMap[data.status];
+                }
+                alert(`✅ Producer ${data.status}`);
+            }
+        } catch (err) {
+            alert('❌ Network error');
+        }
+    }
+</script>
+
 {% endblock %}
