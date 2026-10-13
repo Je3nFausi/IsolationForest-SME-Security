@@ -1,46 +1,92 @@
 """
-Send BI-Safe alerts by SMS through Africa's Talking.
+Send BI-Safe alerts to SME owners by SMS or WhatsApp.
 
-Default is a DRY RUN (prints only). Add --send to really call the API.
-Credentials come from environment variables AT_USERNAME and AT_API_KEY.
-Use AT_USERNAME=sandbox for the free sandbox.
+Modes:
+    (default)    DRY RUN: prints what would be sent, records nothing
+    --simulate   pretend to send: writes results/<channel>_outbox.log and
+                 records the message in the alert_deliveries table
+    --send       really send (SMS through Africa's Talking only; needs the
+                 AT_USERNAME and AT_API_KEY environment variables)
 
 Run:
     python scripts/send_alerts.py
-    python scripts/send_alerts.py --send
-    python scripts/send_alerts.py --send --priorities HIGH MEDIUM --limit 5
+    python scripts/send_alerts.py --simulate --channel both
 """
 
 import argparse
 import os
 import sqlite3
-
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "database", "bi_safe.db")
+RESULTS_DIR = os.path.join(BASE_DIR, "results")
+CHANNELS = ["sms", "whatsapp"]
 
 
-def build_message(priority, score):
+def ensure_table(conn):
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS alert_deliveries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            alert_row_id INTEGER NOT NULL,
+            channel TEXT NOT NULL,
+            phone TEXT,
+            message TEXT,
+            mode TEXT,
+            sent_at TEXT
+        )
+        """
+    )
+    conn.commit()
+
+
+def build_message(channel, priority, score):
+    if channel == "whatsapp":
+        return (
+            f"*BI-Safe {priority} alert*: unusual network traffic detected "
+            f"(score {score:.3f}). Please review your dashboard. "
+            f"Reply YES if this was you, or NO if it was not."
+        )
     return (
         f"BI-Safe {priority} alert: unusual network traffic detected "
         f"(score {score:.3f}). Please review your dashboard."
     )
 
 
-def get_pending(conn, priorities, limit):
+def get_pending(conn, channel, priorities, limit):
     marks = ",".join("?" for _ in priorities)
     sql = f"""
         SELECT a.id, a.priority, a.anomaly_score, u.name, u.phone
         FROM alerts a
         JOIN users u ON u.sme_id = a.sme_id AND u.role = 'owner'
-        WHERE COALESCE(a.delivered, 0) = 0
-          AND a.priority IN ({marks})
+        WHERE a.priority IN ({marks})
+          AND NOT EXISTS (
+              SELECT 1 FROM alert_deliveries d
+              WHERE d.alert_row_id = a.id AND d.channel = ?
+          )
         ORDER BY CASE a.priority WHEN 'HIGH' THEN 0 WHEN 'MEDIUM' THEN 1 ELSE 2 END,
                  a.anomaly_score ASC
         LIMIT ?
     """
-    return conn.execute(sql, [*priorities, limit]).fetchall()
+    return conn.execute(sql, [*priorities, channel, limit]).fetchall()
+
+
+def record_delivery(conn, alert_id, channel, phone, message, mode):
+    now = datetime.now().isoformat(timespec="seconds")
+    conn.execute(
+        "INSERT INTO alert_deliveries "
+        "(alert_row_id, channel, phone, message, mode, sent_at) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (alert_id, channel, phone, message, mode, now),
+    )
+    conn.execute("UPDATE alerts SET delivered = 1 WHERE id = ?", (alert_id,))
+    conn.commit()
+    if mode == "simulated":
+        os.makedirs(RESULTS_DIR, exist_ok=True)
+        path = os.path.join(RESULTS_DIR, f"{channel}_outbox.log")
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(f"{now} | to {phone} | {message}\n")
 
 
 def accepted(response):
@@ -52,21 +98,26 @@ def accepted(response):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Send alerts by SMS.")
-    parser.add_argument("--send", action="store_true", help="really send")
+    parser = argparse.ArgumentParser(description="Send alerts by SMS or WhatsApp.")
+    parser.add_argument("--channel", choices=["sms", "whatsapp", "both"], default="sms")
+    parser.add_argument("--send", action="store_true", help="really send (SMS only)")
+    parser.add_argument("--simulate", action="store_true", help="log instead of sending")
     parser.add_argument("--priorities", nargs="+", default=["HIGH"])
     parser.add_argument("--limit", type=int, default=3)
-    parser.add_argument("--simulate", action="store_true",
-                        help="pretend to send: log to results/sms_outbox.log")
     args = parser.parse_args()
 
-    conn = sqlite3.connect(DB_PATH)
-    rows = get_pending(conn, args.priorities, args.limit)
-    if not rows:
-        print("No pending alerts to send (check sme_id links and priorities).")
+    if args.send and args.simulate:
+        print("Choose either --send or --simulate, not both.")
+        return
+    channels = CHANNELS if args.channel == "both" else [args.channel]
+    if args.send and "whatsapp" in channels:
+        print("Live WhatsApp is not supported. Use --simulate for WhatsApp.")
         return
 
-    sms = None
+    conn = sqlite3.connect(DB_PATH)
+    ensure_table(conn)
+
+    sms_client = None
     if args.send:
         username = os.environ.get("AT_USERNAME")
         api_key = os.environ.get("AT_API_KEY")
@@ -76,42 +127,38 @@ def main():
         import africastalking
 
         africastalking.initialize(username, api_key)
-        sms = africastalking.SMS
+        sms_client = africastalking.SMS
         print(f"Sending as '{username}'")
-    else:
-        if not args.simulate: print("DRY RUN: nothing will be sent. Add --send to send.\n")
+    elif not args.simulate:
+        print("DRY RUN: nothing will be sent or recorded.")
 
-    sent = 0
-    for alert_id, priority, score, name, phone in rows:
-        message = build_message(priority, score)
-        print(f"Alert #{alert_id} [{priority}] -> {name} {phone}")
-        print(f"  {message}")
-        if args.simulate:
-            outbox = os.path.join(BASE_DIR, "results", "sms_outbox.log")
-            with open(outbox, "a", encoding="utf-8") as f:
-                f.write(f"{datetime.now().isoformat(timespec='seconds')} | to {phone} | {message}\n")
-            conn.execute("UPDATE alerts SET delivered = 1 WHERE id = ?", (alert_id,))
-            conn.commit()
-            sent += 1
-            print("  Simulated: written to results/sms_outbox.log")
-            continue
-        if not args.send:
-            continue
-        try:
-            response = sms.send(message, [phone])
-        except Exception as exc:
-            print(f"  FAILED: {exc}")
-            continue
-        if accepted(response):
-            conn.execute("UPDATE alerts SET delivered = 1 WHERE id = ?", (alert_id,))
-            conn.commit()
-            sent += 1
-            print("  Accepted by provider.")
-        else:
-            print(f"  Not accepted: {response}")
+    for channel in channels:
+        rows = get_pending(conn, channel, args.priorities, args.limit)
+        print(f"\n== {channel.upper()}: {len(rows)} pending ==")
+        done = 0
+        for alert_id, priority, score, name, phone in rows:
+            message = build_message(channel, priority, score)
+            print(f"Alert #{alert_id} [{priority}] -> {name} {phone}")
+            print(f"  {message}")
+            if args.simulate:
+                record_delivery(conn, alert_id, channel, phone, message, "simulated")
+                done += 1
+                print(f"  Simulated: written to results/{channel}_outbox.log")
+            elif args.send:
+                try:
+                    response = sms_client.send(message, [phone])
+                except Exception as exc:
+                    print(f"  FAILED: {exc}")
+                    continue
+                if accepted(response):
+                    record_delivery(conn, alert_id, channel, phone, message, "live")
+                    done += 1
+                    print("  Accepted by provider.")
+                else:
+                    print(f"  Not accepted: {response}")
+        if args.simulate or args.send:
+            print(f"{channel.upper()}: handled {done} of {len(rows)}.")
 
-    if args.send or args.simulate:
-        print(f"\nSent {sent} of {len(rows)}.")
     conn.close()
 
 

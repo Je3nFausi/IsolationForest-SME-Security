@@ -59,6 +59,15 @@ def get_recent_alerts(limit=10):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM alerts ORDER BY id DESC LIMIT ?", (limit,))
     alerts = [dict(row) for row in cursor.fetchall()]
+    try:
+        cursor.execute("SELECT alert_row_id, channel FROM alert_deliveries")
+        sent = {}
+        for r in cursor.fetchall():
+            sent.setdefault(r["alert_row_id"], []).append(r["channel"])
+    except Exception:
+        sent = {}
+    for a in alerts:
+        a["channels"] = sorted(sent.get(a["id"], []))
     conn.close()
     return alerts
 

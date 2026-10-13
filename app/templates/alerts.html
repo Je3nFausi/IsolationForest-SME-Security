@@ -21,6 +21,7 @@
                     <th>Priority</th>
                     <th>Anomaly Score</th>
                     <th>Status</th>
+                    <th>Notified</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -31,6 +32,7 @@
                     <td><span class="badge badge-{{ alert.priority|lower }}">{{ alert.priority }}</span></td>
                     <td>{{ "%.4f"|format(alert.anomaly_score or 0) }}</td>
                     <td>{{ alert.status or 'Pending' }}</td>
+                    <td>{% for c in alert.channels %}<span class="badge badge-low">{{ 'SMS' if c == 'sms' else 'WhatsApp' }}</span> {% else %}<span style="color: var(--muted);">Not sent</span>{% endfor %}</td>
                     <td>
                         <button class="btn btn-success btn-sm" onclick="confirmAlert({{ alert.id }})">✅ Confirm</button>
                         <button class="btn btn-danger btn-sm" onclick="denyAlert({{ alert.id }})">❌ Deny</button>
