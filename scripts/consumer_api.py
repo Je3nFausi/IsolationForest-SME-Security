@@ -111,12 +111,20 @@ def run(max_events, topic=KAFKA_TOPIC):
     print(f"Connected to Kafka topic '{topic}'. Ctrl+C to stop.\n")
 
     results = []
-    processed = anomalies = errors_in_a_row = 0
+    processed = anomalies = errors_in_a_row = skipped = 0
     start = time.time()
 
     try:
         for message in consumer:
             event = message.value
+            if "protocol" not in event or "service" not in event:
+                skipped += 1
+                if skipped <= 3:
+                    print(f"  [Skipped] offset {message.offset}: not a raw event. Wrong topic?")
+                if skipped >= 20:
+                    print("Too many non-raw events. Stopping.")
+                    break
+                continue
             try:
                 is_anomaly, db_score, ms = score_event(event)
                 errors_in_a_row = 0
