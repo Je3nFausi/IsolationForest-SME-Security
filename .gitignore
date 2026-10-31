@@ -17,3 +17,11 @@ __pycache__/
 
 # Environment
 .env
+# local backups and demo outputs
+database/bi_safe_*.db
+*_before_*
+results/alert_history_*.json
+results/consumer_api_results*.csv
+results/*_outbox.log
+scripts/alert_trigger_api.py
+scripts/send_alerts_v1.py
