@@ -13,11 +13,11 @@
     <div class="stats-grid">
         <div>
             <div class="stat-card-label">Status</div>
-            <div class="stat-card-value green" style="font-size: 22px;">Running</div>
+            <div id="producer-status-display" class="stat-card-value green" style="font-size: 22px;">{{ (status.producer_status or 'stopped')|capitalize }}</div>
         </div>
         <div>
             <div class="stat-card-label">Rate</div>
-            <div class="stat-card-value" style="font-size: 22px;">10/sec</div>
+            <div class="stat-card-value" style="font-size: 22px;">{{ status.traffic_rate or 10 }}/sec</div>
         </div>
         <div>
             <div class="stat-card-label">Events</div>
@@ -30,6 +30,8 @@
         <button class="btn btn-danger" onclick="producerAction('stop')">⏹️ Stop</button>
     </div>
 </div>
+
+{% endblock %}
 
 {% block extra_scripts %}
 <script>
