@@ -36,3 +36,7 @@ results/*.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Database files (never commit SQLite binaries)
+database/*.db
+database/*.db-journal
