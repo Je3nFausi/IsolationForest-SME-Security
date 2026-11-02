@@ -1,27 +1,38 @@
-# Virtual environment
-venv/
-.venv/
-
-# Data files
-data/
-
-# Model files
-models/
-
-# Python cache
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+build/
+dist/
+*.egg-info/
+.venv/
+.venv-1/
+venv/
 
-# Jupyter
-.ipynb_checkpoints/
+# Data and models (large or sensitive)
+data/real/
+datasets/real/
+models/*.joblib
+models/*.pkl
+*.csv
+!requirements/*.txt
 
-# Environment
+# Runtime artifacts
+producer.pid
+*.log
+results/*.csv
+results/*.json
+*.db-journal
+
+# Environment (credentials — NEVER commit)
 .env
-# local backups and demo outputs
-database/bi_safe_*.db
-*_before_*
-results/alert_history_*.json
-results/consumer_api_results*.csv
-results/*_outbox.log
-scripts/alert_trigger_api.py
-scripts/send_alerts_v1.py
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

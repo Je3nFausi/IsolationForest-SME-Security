@@ -1,11 +1,11 @@
-# Everything needed to run BI-Safe (dashboard, Kafka, ML pipeline, API)
+# Core runtime dependencies for BI-Safe.
+# Governing rule: if the application code imports it to run, it belongs here.
+
 flask
-flask-session
-werkzeug
-kafka-python
+flask-cors
 pandas
 numpy
-scipy
 scikit-learn
 joblib
 requests
+kafka-python

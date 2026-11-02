@@ -1,9 +1,8 @@
-# Base plus development and analysis tools
+# Development-only dependencies.
+# Governing rule: if only a developer uses it to think, test, or explore,
+# it belongs here.
+
 -r base.txt
-pytest
-ruff
-black
-matplotlib
+
 seaborn
-jupyter
-faker
+python-dotenv

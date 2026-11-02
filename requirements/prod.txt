@@ -1,3 +1,5 @@
-# Base plus a production WSGI server (works on Windows and Linux)
+# Production-only dependencies.
+
 -r base.txt
-waitress
+
+gunicorn
