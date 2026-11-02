@@ -38,6 +38,8 @@ from db import (
     insert_network,
     get_networks_for_sme,
     update_network_activity,
+    record_alert_feedback,
+    get_feedback_stats,
 )
 
 
@@ -285,6 +287,31 @@ PRODUCER_PID_FILE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "producer.pid"
 )
+
+
+@app.route("/api/alerts/<int:alert_id>/feedback", methods=["POST"])
+@login_required(role="owner")
+def alert_feedback(alert_id):
+    """Owner confirms or denies an alert."""
+    data = request.get_json(silent=True) or {}
+    feedback_type = data.get("feedback_type")
+    if feedback_type not in ("confirm", "deny"):
+        return jsonify({"success": False, "message": "Invalid feedback type"}), 400
+    user = get_current_user()
+    ok = record_alert_feedback(alert_id, user.get("id"), feedback_type, data.get("comment", ""))
+    if not ok:
+        return jsonify({"success": False, "message": "Alert not found"}), 404
+    if feedback_type == "confirm":
+        message = "Alert " + str(alert_id) + " confirmed as a real threat"
+    else:
+        message = "Alert " + str(alert_id) + " marked as a false alarm"
+    return jsonify({"success": True, "message": message})
+
+
+@app.route("/api/feedback/stats", methods=["GET"])
+@login_required(role="admin")
+def feedback_stats():
+    return jsonify(get_feedback_stats())
 
 
 @app.route("/api/producer/start", methods=["POST"])

@@ -248,3 +248,50 @@ def update_network_activity(network_id, events_processed):
     conn.commit()
     conn.close()
     return True
+
+def record_alert_feedback(alert_row_id, user_id, feedback_type, comment=""):
+    """Save an owner's Confirm/Deny decision and update the alert status."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT sme_id FROM alerts WHERE id = ?", (alert_row_id,))
+    row = cursor.fetchone()
+    if row is None:
+        conn.close()
+        return False
+    sme_id = row[0]
+    db_type = "True_Positive" if feedback_type == "confirm" else "False_Positive"
+    cursor.execute(
+        "DELETE FROM feedback WHERE alert_id = ? AND user_id = ?",
+        (alert_row_id, user_id),
+    )
+    cursor.execute(
+        "INSERT INTO feedback (alert_id, sme_id, user_id, feedback_type, comment) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (alert_row_id, sme_id, user_id, db_type, comment),
+    )
+    status = "Acknowledged" if feedback_type == "confirm" else "Resolved"
+    cursor.execute("UPDATE alerts SET status = ? WHERE id = ?", (status, alert_row_id))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def get_feedback_stats():
+    """Totals used by the admin dashboard and the retrain decision."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT feedback_type, COUNT(*) FROM feedback GROUP BY feedback_type")
+    counts = {r[0]: r[1] for r in cursor.fetchall()}
+    cursor.execute("SELECT COUNT(*) FROM alerts")
+    total_alerts = cursor.fetchone()[0]
+    conn.close()
+    confirmed = counts.get("True_Positive", 0)
+    denied = counts.get("False_Positive", 0)
+    reviewed = confirmed + denied
+    return {
+        "confirmed": confirmed,
+        "denied": denied,
+        "reviewed": reviewed,
+        "total_alerts": total_alerts,
+        "false_alarm_rate": round(denied / reviewed, 3) if reviewed else None,
+    }

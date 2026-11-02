@@ -50,7 +50,25 @@
 {% endblock %}
 {% block extra_scripts %}
 <script>
-    function confirmAlert(id) { showToast('✅ Alert ' + id + ' confirmed', 'success'); }
-    function denyAlert(id) { showToast('❌ Alert ' + id + ' denied', 'error'); }
+    async function sendFeedback(id, type) {
+        try {
+            const res = await fetch('/api/alerts/' + id + '/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ feedback_type: type })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message, type === 'confirm' ? 'success' : 'error');
+                setTimeout(function () { location.reload(); }, 700);
+            } else {
+                showToast(data.message || 'Could not save feedback', 'error');
+            }
+        } catch (e) {
+            showToast('Network error', 'error');
+        }
+    }
+    function confirmAlert(id) { sendFeedback(id, 'confirm'); }
+    function denyAlert(id) { sendFeedback(id, 'deny'); }
 </script>
 {% endblock %}
