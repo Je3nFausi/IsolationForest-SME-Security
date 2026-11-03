@@ -10,3 +10,4 @@ joblib
 requests
 kafka-python
 python-dotenv
+python-dotenv
