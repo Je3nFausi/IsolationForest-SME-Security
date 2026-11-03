@@ -5,3 +5,5 @@ scikit-learn
 joblib
 pandas
 numpy
+psycopg2-binary==2.9.13
+python-dotenv==1.2.4
