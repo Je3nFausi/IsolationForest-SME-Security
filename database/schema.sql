@@ -36,3 +36,22 @@ CREATE TABLE IF NOT EXISTS predictions (
 CREATE INDEX IF NOT EXISTS idx_predictions_timestamp   ON predictions (timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_predictions_is_anomaly  ON predictions (is_anomaly) WHERE is_anomaly = TRUE;
 CREATE INDEX IF NOT EXISTS idx_predictions_event_id    ON predictions (event_id);
+-- =====================================================================
+-- Step 4: alerts
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS alerts (
+    id             BIGSERIAL PRIMARY KEY,
+    prediction_id  BIGINT NOT NULL REFERENCES predictions(id) ON DELETE CASCADE,
+    event_id       TEXT NOT NULL,
+    alert_type     TEXT NOT NULL,     
+    severity       TEXT NOT NULL,     
+    status         TEXT NOT NULL,     
+    sent_at        TIMESTAMPTZ,
+    error_message  TEXT,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_prediction_id ON alerts (prediction_id);
+CREATE INDEX IF NOT EXISTS idx_alerts_event_id      ON alerts (event_id);
+CREATE INDEX IF NOT EXISTS idx_alerts_created_at    ON alerts (created_at DESC);
