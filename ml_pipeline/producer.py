@@ -158,8 +158,6 @@ def main():
             if is_anom:
                 anomalies_sent += 1
             tag = "⚠️  ANOMALY" if is_anom else "✅ normal "
-            print(f"[{sent:5d}] {tag} id={event['event_id'][:8]} "
-                  f"bytes_sent={event['bytes_sent']:>10.1f}")
             if args.max_events > 0 and sent >= args.max_events:
                 break
             time.sleep(sleep)

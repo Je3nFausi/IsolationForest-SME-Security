@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Producer Control - BI-Safe{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Producer Control</h1>
+        <p>Manage the network traffic simulation.</p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-card-label">Producer Status</div>
+        <div class="stat-card-value" id="producerStatus" style="font-size: 28px; color: var(--muted);">Checking...</div>
+        <div class="stat-card-subtext">Currently streaming</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Traffic Rate</div>
+        <div class="stat-card-value" style="font-size: 28px;">5/s</div>
+        <div class="stat-card-subtext">Events per second</div>
+    </div>
+</div>
+
+<div style="background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(44, 30, 22, 0.04); margin-bottom: 20px;">
+    <h2 style="font-family: 'Playfair Display', serif; font-size: 24px; margin-bottom: 20px;">Simulation Controls</h2>
+    <div style="display: flex; gap: 15px;">
+        <!-- START BUTTON -->
+        <form method="POST" action="/admin/producer/start" style="flex: 1;">
+            <button type="submit" class="btn btn-primary" style="width: 100%; background: var(--low); border-color: var(--low);">Start Producer</button>
+        </form>
+        
+        <!-- STOP BUTTON -->
+        <form method="POST" action="/admin/producer/stop" style="flex: 1;">
+            <button type="submit" class="btn" style="width: 100%; background: var(--high); color: white; border-color: var(--high);">Stop Producer</button>
+        </form>
+    </div>
+</div>
+
+<div style="background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(44, 30, 22, 0.04);">
+    <h2 style="font-family: 'Playfair Display', serif; font-size: 24px; margin-bottom: 20px;">Configuration</h2>
+    <div style="display: flex; gap: 20px;">
+        <div class="form-group" style="flex: 1;">
+            <label>CSV Dataset</label>
+            <select><option>CIC-IDS-2017 (synthetic_traffic.csv)</option></select>
+        </div>
+        <div class="form-group" style="flex: 1;">
+            <label>Batch Size</label>
+            <input type="number" value="100">
+        </div>
+        <div class="form-group" style="flex: 1;">
+            <label>Delay (seconds)</label>
+            <input type="number" value="0.01" step="0.01">
+        </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top: 10px;" disabled>Save Configuration (Coming Soon)</button>
+</div>
+
+<script>
+    // Poll the backend every 2 seconds to check if the producer is running
+    function checkProducerStatus() {
+        fetch('/admin/producer/status')
+            .then(response => response.json())
+            .then(data => {
+                const statusEl = document.getElementById('producerStatus');
+                if (data.status === 'running') {
+                    statusEl.innerText = 'Running';
+                    statusEl.style.color = 'var(--low)';
+                } else {
+                    statusEl.innerText = 'Stopped';
+                    statusEl.style.color = 'var(--high)';
+                }
+            });
+    }
+
+    // Run immediately, then every 2 seconds
+    checkProducerStatus();
+    setInterval(checkProducerStatus, 2000);
+</script>
+{% endblock %}

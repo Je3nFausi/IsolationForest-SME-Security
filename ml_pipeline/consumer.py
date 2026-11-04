@@ -1,12 +1,5 @@
 """
-consumer.py — Reads network events from Kafka, scores them with the trained
-Isolation Forest, prints a terminal alert on anomalies, inserts predictions 
-into PostgreSQL, and fires EMAIL + DASHBOARD alerts on anomalies.
-
-Usage (from project root):
-    python ml_pipeline/consumer.py
-
-Stop with Ctrl+C.
+consumer.py — Scores events, inserts to PostgreSQL, generates recommendations, and fires alerts.
 """
 import argparse
 import json
@@ -26,8 +19,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from database.db import get_connection
+from alerts.recommender import get_recommendation
 
-# Load environment variables (Gmail credentials)
+# Load environment variables
 load_dotenv(PROJECT_ROOT / ".env")
 
 MODEL_DIR = PROJECT_ROOT / "models"
@@ -56,13 +50,12 @@ INSERT INTO predictions (
 """
 
 INSERT_ALERT_SQL = """
-INSERT INTO alerts (prediction_id, event_id, alert_type, severity, status)
-VALUES (%s, %s, 'email+dashboard', 'high', 'sent');
+INSERT INTO alerts (prediction_id, event_id, alert_type, severity, status, recommendation)
+VALUES (%s, %s, 'email+dashboard', %s, 'sent', %s);
 """
 
 
-def send_email_alert(event_id, score, truth):
-    """Connects to Gmail via SMTP and sends a real alert email."""
+def send_email_alert(event_id, score, truth, severity, recommendation):
     host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
     port = int(os.environ.get("SMTP_PORT", 587))
     user = os.environ.get("SMTP_USER")
@@ -77,7 +70,7 @@ def send_email_alert(event_id, score, truth):
     msg = MIMEMultipart()
     msg['From'] = sender
     msg['To'] = recipient
-    msg['Subject'] = f"🚨 BI-Safe Alert: Anomaly Detected ({event_id[:8]})"
+    msg['Subject'] = f"🚨 BI-Safe [{severity.upper()}] Alert: Anomaly Detected ({event_id[:8]})"
 
     body = f"""
     BI-Safe Security Alert
@@ -85,15 +78,17 @@ def send_email_alert(event_id, score, truth):
     An anomaly has been detected in your network traffic.
 
     Event ID: {event_id}
-    Anomaly Score: {score:.4f} (Threshold: < {THRESHOLD})
+    Anomaly Score: {score:.4f}
     Ground Truth: {truth}
+    
+    RECOMMENDED ACTION:
+    {recommendation}
 
     Please check your BI-Safe Dashboard for more details.
     """
     msg.attach(MIMEText(body, 'plain'))
 
     try:
-        # Using SMTP with explicit ehlo() and a longer timeout for Windows
         with smtplib.SMTP(host, port, timeout=30) as server:
             server.ehlo()
             server.starttls()
@@ -108,25 +103,19 @@ def send_email_alert(event_id, score, truth):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Score Kafka events + persist to DB")
+    parser = argparse.ArgumentParser()
     parser.add_argument("--broker", default="localhost:9092")
     parser.add_argument("--topic", default="network-events")
-    parser.add_argument("--group", default="anomaly-scorer-v3")
+    parser.add_argument("--group", default="anomaly-scorer-v4")
     args = parser.parse_args()
 
-    print("Loading model, scaler, feature list...")
     with open(MODEL_DIR / "feature_cols.json") as f:
         feature_cols = json.load(f)
     model = load(MODEL_DIR / "if_contam_0_05.joblib")
     scaler = load(MODEL_DIR / "scaler.joblib")
-    print(f"Loaded model with {len(feature_cols)} features")
-    print(f"Threshold: {THRESHOLD:+.4f}")
-
-    print("Connecting to PostgreSQL...")
+    
+    print("DB connected. Listening for events...\n")
     conn = get_connection()
-    print("DB connected.")
-
-    print(f"Listening on '{args.topic}' at {args.broker}...\n")
 
     consumer = KafkaConsumer(
         args.topic,
@@ -140,13 +129,14 @@ def main():
     seen = 0
     flagged = 0
     db_errors = 0
+    
     try:
         for msg in consumer:
             event = msg.value
             seen += 1
             try:
                 X = np.array([[float(event[c]) for c in feature_cols]])
-            except (KeyError, TypeError, ValueError) as e:
+            except Exception as e:
                 print(f"[{seen:5d}] SKIP malformed event: {e}")
                 continue
 
@@ -157,8 +147,10 @@ def main():
             eid = event.get("event_id", "?")
             eid_short = eid[:8]
 
-            # --- DB Insert & Alerts ---
             prediction_id = None
+            severity = None
+            recommendation = None
+
             try:
                 row = {
                     "event_id": eid,
@@ -172,9 +164,14 @@ def main():
                     cur.execute(INSERT_SQL, row)
                     prediction_id = cur.fetchone()['id']
                     
-                    # If anomaly, write to alerts table immediately
                     if is_anomaly:
-                        cur.execute(INSERT_ALERT_SQL, (prediction_id, eid))
+                        # Generate recommendation
+                        severity, recommendation = get_recommendation(row)
+                        
+                        # Save to alerts table
+                        cur.execute(INSERT_ALERT_SQL, (
+                            prediction_id, eid, severity, recommendation
+                        ))
             except Exception as e:
                 db_errors += 1
                 print(f"[{seen:5d}] DB ERROR: {e}")
@@ -183,23 +180,20 @@ def main():
             # --- Fire Email ---
             if is_anomaly and prediction_id is not None:
                 print(f"[{seen:5d}] 🚨 ANOMALY - FIRING ALERTS for {eid_short}...")
-                send_email_alert(eid, score, truth)
+                print(f"  ↳ Action: {recommendation}")
+                send_email_alert(eid, score, truth, severity, recommendation)
 
             marker = "⚠️  ANOMALY" if is_anomaly else "✅ normal "
             if is_anomaly:
                 flagged += 1
-            print(
-                f"[{seen:5d}] {marker}  id={eid_short}  "
-                f"score={score:+.4f}  truth={truth}"
-            )
+            print(f"[{seen:5d}] {marker}  id={eid_short}  score={score:+.4f}")
 
     except KeyboardInterrupt:
         print("\nStopping consumer...")
     finally:
         consumer.close()
         conn.close()
-        print(f"\nScored {seen} events | flagged {flagged} anomalies "
-              f"({flagged/max(seen,1)*100:.1f}%) | DB errors: {db_errors}")
+        print(f"\nScored {seen} events | flagged {flagged} anomalies | DB errors: {db_errors}")
 
 
 if __name__ == "__main__":

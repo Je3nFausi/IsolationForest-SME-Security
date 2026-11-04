@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BI-Safe{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    {% if session.user %}
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div>
+                    <h1>BI-Safe.</h1>
+                    <p>Security Monitor</p>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                {% if session.user.role == 'owner' %}
+                    <!-- SME Owner Links -->
+                    <a href="{{ url_for('owner_dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'owner_dashboard' %}active{% endif %}">Dashboard</a>
+                    <a href="{{ url_for('reports') }}" class="sidebar-nav-item {% if request.endpoint == 'reports' %}active{% endif %}">Reports</a>
+                    <a href="{{ url_for('settings') }}" class="sidebar-nav-item {% if request.endpoint == 'settings' %}active{% endif %}">Settings</a>
+                {% else %}
+                    <!-- System Admin Links -->
+                    <a href="{{ url_for('admin_dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">Overview</a>
+                    <a href="{{ url_for('admin_producer') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_producer' %}active{% endif %}">Producer Control</a>
+                    <a href="{{ url_for('admin_users') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_users' %}active{% endif %}">User Management</a>
+                    <a href="{{ url_for('admin_feedback') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_feedback' %}active{% endif %}">Model Feedback</a>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-footer">
+                <p style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">{{ session.user.name }}</p>
+                <p style="font-size: 11px; color: var(--muted); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">{{ session.user.role }}</p>
+                <a href="{{ url_for('logout') }}" class="sidebar-logout">Log out</a>
+            </div>
+        </aside>
+
+        <main class="main-area">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    {% else %}
+        {% block auth_content %}{% endblock %}
+    {% endif %}
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // Function to show a toast
+        function showToast(message) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return; // Safety check
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = message;
+            container.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // Check for Flask flash messages and show them as toasts
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    showToast("{{ message }}");
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

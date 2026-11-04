@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Admin Overview - BI-Safe{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>System Overview</h1>
+        <p>Administrator: {{ user.name }}</p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-card-label">Model Precision</div>
+        <div class="stat-card-value">{{ "%.1f"|format(precision) }}%</div>
+        <div class="stat-card-subtext">Alert Accuracy</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Model Recall</div>
+        <div class="stat-card-value">{{ "%.1f"|format(recall) }}%</div>
+        <div class="stat-card-subtext">Threat Coverage</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">True Positives</div>
+        <div class="stat-card-value" style="color: var(--low);">{{ tp }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">False Positives</div>
+        <div class="stat-card-value" style="color: var(--high);">{{ fp }}</div>
+    </div>
+</div>
+
+<div style="background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(44, 30, 22, 0.04);">
+    <h2 style="font-family: 'Playfair Display', serif; font-size: 28px; margin-bottom: 30px;">Model Drift Monitor</h2>
+    <div style="height: 300px;">
+        <canvas id="driftChart"></canvas>
+    </div>
+</div>
+
+<script>
+    const driftCtx = document.getElementById('driftChart');
+    const driftGradient = driftCtx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+    driftGradient.addColorStop(0, 'rgba(255, 107, 74, 0.2)');
+    driftGradient.addColorStop(1, 'rgba(255, 107, 74, 0.0)');
+
+    new Chart(driftCtx, {
+        type: 'line',
+        data: {
+            labels: ['Batch 1', 'Batch 2', 'Batch 3', 'Batch 4', 'Batch 5'],
+            datasets: [{
+                label: 'F1-Score',
+                data: [0.85, 0.83, 0.80, 0.72, 0.65],
+                borderColor: '#FF6B4A',
+                backgroundColor: driftGradient,
+                tension: 0.4, fill: true, borderWidth: 3,
+                pointRadius: 6, pointBackgroundColor: '#FF6B4A', pointBorderColor: '#fff'
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+</script>
+{% endblock %}

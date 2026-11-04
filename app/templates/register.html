@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Register - BI-Safe{% endblock %}
+
+{% block auth_content %}
+<div class="auth-page">
+    <div class="auth-left" style="background: #2C1E16;">
+        <div>
+            <h1 style="color: white; font-family: 'Playfair Display', serif; font-size: 56px; line-height: 1.1; margin-bottom: 20px;">
+                Join the security <span style="font-style: italic; color: var(--secondary);">revolution</span>
+            </h1>
+            <p style="color: #DCD2C8; font-size: 18px; line-height: 1.6;">
+                Create your BI-Safe account and start protecting your business data in minutes.
+            </p>
+        </div>
+    </div>
+
+    <div class="auth-right">
+        <h2>Create account.</h2>
+        <p style="color: var(--muted); margin-bottom: 40px;">Fill in your details to get started.</p>
+
+        <form method="POST" action="{{ url_for('register') }}" autocomplete="off">
+            
+            <!-- THE FIX: Hidden dummy fields to trick the browser's autofill -->
+            <input type="text" name="dummy_email" style="display:none" autocomplete="off">
+            <input type="password" name="dummy_password" style="display:none" autocomplete="new-password">
+
+            <div class="form-group">
+                <label for="role">I am registering as</label>
+                <select id="role" name="role" required>
+                    <option value="owner">SME Owner</option>
+                    <option value="admin">System Administrator</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="sme_type">Business Type (Optional)</label>
+                <select id="sme_type" name="sme_type">
+                    <option value="">None / Not Applicable (Admins)</option>
+                    <option value="Retail">Retail Shop</option>
+                    <option value="Salon">Salon / Barber</option>
+                    <option value="Restaurant">Restaurant / Cafe</option>
+                    <option value="Tech">Tech / Agency</option>
+                    <option value="Logistics">Logistics / Delivery</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="name" required placeholder="Jane Wanjiku" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required placeholder="you@gmail.com" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" required placeholder="+254712345678" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <!-- Force autocomplete to new-password and keep value empty -->
+                <input type="password" id="password" name="password" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password" value="">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 16px; font-size: 16px; margin-top: 10px;">
+                Create Account
+            </button>
+        </form>
+
+        <p style="margin-top: 30px; font-size: 14px; color: var(--muted); text-align: center;">
+            Already have an account? 
+            <a href="{{ url_for('login') }}" style="color: var(--primary); font-weight: 700; text-decoration: none;">Sign in</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

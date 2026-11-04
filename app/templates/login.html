@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Login - BI-Safe{% endblock %}
+
+{% block auth_content %}
+<div class="auth-page">
+    <!-- Left Side: Branding -->
+    <div class="auth-left" style="background: var(--primary);">
+        <div>
+            <h1 style="color: white; font-family: 'Playfair Display', serif; font-size: 56px; line-height: 1.1; margin-bottom: 20px;">
+                Continuous security for <span style="font-style: italic; color: var(--secondary);">Kenyan SMEs</span>
+            </h1>
+            <p style="color: #FFE8E2; font-size: 18px; line-height: 1.6; max-width: 400px;">
+                Real-time anomaly detection using Isolation Forest algorithms. Protect your business data with intelligent monitoring.
+            </p>
+        </div>
+    </div>
+
+    <!-- Right Side: Form -->
+    <div class="auth-right">
+        <h2>Welcome back.</h2>
+        <p style="color: var(--muted); margin-bottom: 40px;">Sign in to access your dashboard.</p>
+        
+        <!-- Flash Messages (Errors/Feedback) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div style="padding: 15px; background: #FFB8A8; color: #2C1E16; font-weight: bold; border-radius: 12px; margin-bottom: 20px;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <!-- autocomplete="email" tells the browser to offer saved emails -->
+                <input type="email" id="email" name="email" required placeholder="you@gmail.com" autocomplete="email">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <!-- autocomplete="current-password" triggers Google Password Manager autofill -->
+                <input type="password" id="password" name="password" required placeholder="Enter your password" autocomplete="current-password">
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 16px; font-size: 16px; margin-top: 10px;">
+                Sign In
+            </button>
+        </form>
+        
+        <p style="margin-top: 30px; font-size: 14px; color: var(--muted); text-align: center;">
+            Don't have an account? 
+            <a href="{{ url_for('register') }}" style="color: var(--primary); font-weight: 700; text-decoration: none;">Create one</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

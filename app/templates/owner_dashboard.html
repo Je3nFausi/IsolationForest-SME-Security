@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - BI-Safe{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Security Dashboard</h1>
+        <p>Welcome back, {{ user.name }}</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn" onclick="window.location.href='/reports'">Download Report</button>
+        <button class="btn btn-primary" onclick="openNetworkModal()">Connect Network</button>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-card-label">Security Score</div>
+        <div class="stat-card-value" style="color: var(--low);">
+            <span id="scoreCounter">0</span><span style="font-size: 20px; color: var(--muted);">/100</span>
+        </div>
+        <div class="stat-card-subtext">Overall health</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Active Alerts</div>
+        <div class="stat-card-value"><span id="alertCounter">0</span></div>
+        <div class="stat-card-subtext">Needs your review</div>
+    </div>
+</div>
+
+<!-- Chart Grid: 2x2 Layout -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px;">
+    <!-- Chart 1: Bar -->
+    <div style="background: white; padding: 30px; border-radius: 24px;">
+        <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 20px;">Alerts by Severity</h3>
+        <div style="height: 200px;"><canvas id="severityChart"></canvas></div>
+    </div>
+    <!-- Chart 2: Line (Timeline) -->
+    <div style="background: white; padding: 30px; border-radius: 24px;">
+        <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 20px;">Anomaly Detection Timeline</h3>
+        <div style="height: 200px;"><canvas id="timelineChart"></canvas></div>
+    </div>
+    <!-- Chart 3: Scatter Plot (Anomaly Scores) -->
+    <div style="background: white; padding: 30px; border-radius: 24px;">
+        <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 20px;">Anomaly Score Distribution</h3>
+        <div style="height: 200px;"><canvas id="scatterChart"></canvas></div>
+    </div>
+    <!-- Chart 4: Doughnut (Alert Types) -->
+    <div style="background: white; padding: 30px; border-radius: 24px;">
+        <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 20px;">Threat Categories</h3>
+        <div style="height: 200px;"><canvas id="doughnutChart"></canvas></div>
+    </div>
+</div>
+
+<h2 style="font-family: 'Playfair Display', serif; font-size: 32px; margin-bottom: 20px;">Recent Alerts</h2>
+<div class="alert-list">
+    {% if alerts %}
+        {% for alert in alerts %}
+            <div class="alert-card" onclick="openModal('{{ alert.id }}', '{{ alert.severity }}', '{{ alert.event_id[:8] }}', '{{ alert.recommendation }}', '{{ alert.score }}', '{{ alert.created_at.strftime('%b %d, %H:%M') }}')">
+                <div class="alert-info">
+                    <div class="severity-dot {{ alert.severity }}"></div>
+                    <div>
+                        <div class="alert-title">{{ alert.severity | title }} Threat Detected</div>
+                        <div class="alert-meta">Event {{ alert.event_id[:8] }} &middot; {{ alert.created_at.strftime('%b %d at %H:%M') }}</div>
+                    </div>
+                </div>
+                <button class="btn btn-sm">Analyze</button>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: var(--muted); font-size: 16px;">No active alerts. Your network is secure.</p>
+    {% endif %}
+</div>
+
+<!-- GENERAL MODEL FEEDBACK SECTION -->
+<div style="background: var(--secondary); padding: 40px; border-radius: 24px; margin-top: 50px;">
+    <h2 style="font-family: 'Playfair Display', serif; font-size: 28px; margin-bottom: 10px;">Model Performance Feedback</h2>
+    <p style="margin-bottom: 20px; color: #2C1E16;">How well is the anomaly detection model performing for your business?</p>
+    
+    <form method="POST" action="/model_feedback" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+            <label style="color: #2C1E16;">Overall Rating</label>
+            <select name="rating" required>
+                <option value="Excellent">Excellent - Very Accurate</option>
+                <option value="Good">Good - Mostly Accurate</option>
+                <option value="Fair">Fair - Some False Alarms</option>
+                <option value="Poor">Poor - Too Many False Alarms</option>
+            </select>
+        </div>
+        <div class="form-group" style="flex: 2; min-width: 300px; margin-bottom: 0;">
+            <label style="color: #2C1E16;">Additional Comments</label>
+            <input type="text" name="comment" placeholder="Tell us what you think...">
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 25px;">Submit Feedback</button>
+    </form>
+</div>
+
+<!-- Alert Modal -->
+<div class="modal-overlay" id="alertModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">X</button>
+        <div id="modal-severity" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px;"></div>
+        <h2 style="font-family: 'Playfair Display', serif; font-size: 36px; margin-bottom: 10px;">Threat Analysis</h2>
+        <p style="font-size: 13px; color: var(--muted);" id="modal-event-info"></p>
+        <div class="recommendation-box" id="modal-recommendation"></div>
+        
+        <form method="POST" action="/feedback" class="action-buttons">
+            <input type="hidden" name="alert_id" id="modal-alert-id">
+            <button type="submit" name="is_correct" value="true" class="btn btn-primary" style="background: var(--low); border-color: var(--low); color: white;">Confirm Threat</button>
+            <button type="submit" name="is_correct" value="false" class="btn" style="background: #EAE3DC; border-color: transparent;">False Alarm</button>
+        </form>
+    </div>
+</div>
+
+<!-- Network Connection Modal -->
+<div class="modal-overlay" id="networkModal">
+    <div class="modal-content" style="width: 450px;">
+        <button class="modal-close" onclick="closeNetworkModal()">X</button>
+        <h2 style="font-family: 'Playfair Display', serif; font-size: 32px; margin-bottom: 10px;">Connect Network</h2>
+        <form method="POST" action="/connect_network">
+            <div class="form-group">
+                <label>Network Subnet / IP Range</label>
+                <input type="text" name="subnet" placeholder="e.g., 192.168.1.0/24" required>
+            </div>
+            <div class="form-group">
+                <label>Monitoring Port</label>
+                <input type="number" name="port" placeholder="e.g., 80" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Start Monitoring</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // --- MODAL LOGIC ---
+    function openModal(id, severity, eventId, recommendation, score, time) {
+        document.getElementById('modal-alert-id').value = id;
+        const sevEl = document.getElementById('modal-severity');
+        sevEl.innerText = severity + " Severity";
+        sevEl.style.color = severity === 'high' ? 'var(--high)' : (severity === 'medium' ? 'var(--medium)' : 'var(--low)');
+        document.getElementById('modal-event-info').innerText = `Event ${eventId} • ${time} • Score: ${parseFloat(score).toFixed(4)}`;
+        document.getElementById('modal-recommendation').innerText = recommendation;
+        document.getElementById('alertModal').classList.add('active');
+    }
+    function closeModal() { document.getElementById('alertModal').classList.remove('active'); }
+    document.getElementById('alertModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+    function openNetworkModal() { document.getElementById('networkModal').classList.add('active'); }
+    function closeNetworkModal() { document.getElementById('networkModal').classList.remove('active'); }
+    document.getElementById('networkModal').addEventListener('click', function(e) { if (e.target === this) closeNetworkModal(); });
+
+    // --- COUNT UP ANIMATION ---
+    function animateValue(id, start, end, duration) {
+        if (start === end) return;
+        var range = end - start;
+        var current = start;
+        var increment = end > start ? 1 : -1;
+        var stepTime = Math.abs(Math.floor(duration / range));
+        var obj = document.getElementById(id);
+        var timer = setInterval(function() {
+            current += increment;
+            obj.textContent = current;
+            if (current == end) {
+                clearInterval(timer);
+            }
+        }, stepTime);
+    }
+
+    // Get the actual values from Flask and start animation on page load
+    window.onload = function() {
+        const finalScore = parseInt("{{ score }}");
+        const finalAlerts = parseInt("{{ alerts|length }}");
+        
+        // 1.5 second animation
+        animateValue("scoreCounter", 0, finalScore, 1500); 
+        animateValue("alertCounter", 0, finalAlerts, 1500);
+    };
+
+    // --- CHARTS ---
+    // 1. Bar Chart
+    new Chart(document.getElementById('severityChart'), {
+        type: 'bar',
+        data: {
+            labels: ['High', 'Medium', 'Low'],
+            datasets: [{ data: [{{ alerts|selectattr('severity', 'equalto', 'high')|list|length }}, {{ alerts|selectattr('severity', 'equalto', 'medium')|list|length }}, {{ alerts|selectattr('severity', 'equalto', 'low')|list|length }}], backgroundColor: ['#D92D20', '#F79009', '#12B76A'], borderRadius: 8 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    // 2. Line Chart
+    new Chart(document.getElementById('timelineChart'), {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{ data: [12, 19, 3, 5, 2, 3, 7], borderColor: '#FF6B4A', tension: 0.4, borderWidth: 3, fill: true, backgroundColor: 'rgba(255, 107, 74, 0.1)' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    // 3. Scatter Chart (Score Distribution)
+    new Chart(document.getElementById('scatterChart'), {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Anomalies',
+                data: [
+                    {x: 1, y: -0.05}, {x: 2, y: -0.12}, {x: 3, y: 0.02}, {x: 4, y: -0.08}, {x: 5, y: 0.05},
+                    {x: 6, y: -0.15}, {x: 7, y: 0.01}, {x: 8, y: -0.09}, {x: 9, y: 0.03}, {x: 10, y: -0.11}
+                ],
+                backgroundColor: '#2C1E16'
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false } } }
+    });
+
+    // 4. Doughnut Chart
+    new Chart(document.getElementById('doughnutChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Exfiltration', 'Port Scan', 'Brute Force'],
+            datasets: [{ data: [30, 50, 20], backgroundColor: ['#FF6B4A', '#FFB8A8', '#EAE3DC'], borderWidth: 0 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+    });
+</script>
+{% endblock %}

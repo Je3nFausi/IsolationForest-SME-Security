@@ -55,3 +55,28 @@ CREATE TABLE IF NOT EXISTS alerts (
 CREATE INDEX IF NOT EXISTS idx_alerts_prediction_id ON alerts (prediction_id);
 CREATE INDEX IF NOT EXISTS idx_alerts_event_id      ON alerts (event_id);
 CREATE INDEX IF NOT EXISTS idx_alerts_created_at    ON alerts (created_at DESC);
+
+-- Step 5: Add recommendation to alerts
+ALTER TABLE alerts ADD COLUMN IF NOT EXISTS recommendation TEXT;
+
+-- Step 6: Feedback loop
+CREATE TABLE IF NOT EXISTS feedback (
+    id             BIGSERIAL PRIMARY KEY,
+    alert_id       BIGINT NOT NULL REFERENCES alerts(id) ON DELETE CASCADE,
+    is_correct     BOOLEAN NOT NULL,  -- TRUE = Confirmed Threat, FALSE = False Alarm
+    comments       TEXT,
+    submitted_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_feedback_alert_id ON feedback (alert_id);
+
+-- Step 7: Users table for Login/Register
+CREATE TABLE IF NOT EXISTS users (
+    id             BIGSERIAL PRIMARY KEY,
+    role           TEXT NOT NULL,      -- 'owner' or 'admin'
+    name           TEXT NOT NULL,
+    email          TEXT UNIQUE NOT NULL,
+    phone          TEXT,
+    password       TEXT NOT NULL,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

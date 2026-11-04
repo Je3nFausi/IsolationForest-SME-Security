@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Model Feedback - BI-Safe{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Model Feedback</h1>
+        <p>Review SME Owner feedback to determine if the model needs retraining.</p>
+    </div>
+</div>
+
+<div style="background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(44, 30, 22, 0.04);">
+    <h2 style="font-family: 'Playfair Display', serif; font-size: 24px; margin-bottom: 20px;">General Feedback</h2>
+    
+    {% if feedbacks %}
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            {% for f in feedbacks %}
+            <div style="border-left: 4px solid var(--primary); background: #FDFBF7; padding: 20px; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <p style="font-weight: 700; margin-bottom: 5px;">
+                            {{ f.name or 'Unknown User' }} 
+                            {% if f.sme_type %}<span style="font-weight: 400; font-size: 12px; color: var(--muted);">({{ f.sme_type }})</span>{% endif %}
+                        </p>
+                        <p style="color: var(--text); font-size: 15px;">{{ f.comments }}</p>
+                    </div>
+                    <p style="font-size: 12px; color: var(--muted);">{{ f.submitted_at.strftime('%b %d, %Y • %H:%M') }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="color: var(--muted);">No general model feedback submitted yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Reports - BI-Safe{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Security Reports</h1>
+        <p>Download and view your historical network data.</p>
+    </div>
+    <!-- Link to the download route -->
+    <a href="{{ url_for('download_report') }}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Download CSV Report</a>
+</div>
+
+<div style="background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(44, 30, 22, 0.04);">
+    <h2 style="font-family: 'Playfair Display', serif; font-size: 24px; margin-bottom: 20px;">What is included in the report?</h2>
+    <p style="color: var(--muted); line-height: 1.6;">
+        The downloaded CSV report will contain a full log of every anomaly detected by the Isolation Forest model. 
+        It includes the Event ID, Severity Level, the Automated Recommendation, the timestamp, and the exact Anomaly Score. 
+        You can open this file directly in Excel or Google Sheets for your records.
+    </p>
+</div>
+{% endblock %}
