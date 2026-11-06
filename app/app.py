@@ -17,8 +17,9 @@ app = Flask(__name__,
             static_folder=str(PROJECT_ROOT / 'app' / 'static'))
 app.secret_key = "bi-safe-secret-key"
 
-# Global variable to track the Kafka Producer subprocess
+# Global variables to track background processes
 producer_process = None
+retrain_process = None
 
 # ==========================================
 # AUTHENTICATION ROUTES
@@ -95,6 +96,106 @@ def logout():
 # ==========================================
 @app.route("/")
 def owner_dashboard():
+    global producer_process
+    if 'user' not in session or session['user']['role'] != 'owner':
+        return redirect(url_for('login'))
+        
+    is_monitoring = producer_process is not None and producer_process.poll() is None
+        
+    # Initialize chart variables with safe defaults BEFORE the DB call
+    severity_data = {}
+    timeline_labels = ['No Data']
+    timeline_data = [0]
+    scatter_data = [{"x": 0, "y": 0}]
+    threat_data = [{"recommendation": "No Threats", "count": 1}]
+    alerts = []
+    total_alerts = 0
+    security_score = 100
+
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            # 1. Fetch recent alerts
+            cur.execute("""
+                SELECT a.id, a.event_id, a.severity, a.recommendation, a.created_at, p.score 
+                FROM alerts a
+                JOIN predictions p ON a.prediction_id = p.id
+                LEFT JOIN feedback f ON a.id = f.alert_id
+                WHERE f.id IS NULL
+                ORDER BY a.created_at DESC
+                LIMIT 5;
+            """)
+            alerts = cur.fetchall()
+            
+            # 2. Count TOTAL unresolved alerts
+            cur.execute("""
+                SELECT COUNT(*) FROM alerts a
+                LEFT JOIN feedback f ON a.id = f.alert_id
+                WHERE f.id IS NULL
+            """)
+            total_alerts = cur.fetchone()['count']
+
+            # 3. Security Score
+            cur.execute("""
+                SELECT COUNT(*) FROM (
+                    SELECT is_anomaly FROM predictions ORDER BY id DESC LIMIT 50
+                ) AS recent_preds WHERE is_anomaly = true
+            """)
+            recent_anomalies = cur.fetchone()['count']
+            security_score = max(0, 100 - (recent_anomalies * 2))
+
+            # --- CHART DATA QUERIES ---
+            
+            # Chart 1
+            cur.execute("SELECT severity, COUNT(*) as count FROM alerts GROUP BY severity")
+            for row in cur.fetchall():
+                severity_data[row['severity']] = row['count']
+            
+            # Chart 2
+            cur.execute("""
+                SELECT DATE(timestamp) as day, COUNT(*) as count 
+                FROM predictions 
+                WHERE is_anomaly = true AND timestamp >= NOW() - INTERVAL '7 days'
+                GROUP BY DATE(timestamp) ORDER BY day ASC
+            """)
+            timeline_rows = cur.fetchall()
+            if timeline_rows:
+                timeline_labels = [row['day'].strftime('%a') for row in timeline_rows]
+                timeline_data = [row['count'] for row in timeline_rows]
+
+            # Chart 3
+            cur.execute("SELECT score FROM predictions WHERE is_anomaly = true ORDER BY id DESC LIMIT 20")
+            scatter_rows = cur.fetchall()
+            if scatter_rows:
+                scatter_data = [{"x": i+1, "y": float(row['score'])} for i, row in enumerate(scatter_rows)]
+
+            # Chart 4
+            cur.execute("SELECT recommendation, COUNT(*) as count FROM alerts GROUP BY recommendation LIMIT 5")
+            threat_rows = cur.fetchall()
+            if threat_rows:
+                threat_data = threat_rows
+                
+    except Exception as e:
+        print(f"Error loading dashboard data: {e}")
+    finally:
+        conn.close()
+        
+    return render_template(
+        "owner_dashboard.html", 
+        user=session['user'], 
+        alerts=alerts, 
+        total_alerts=total_alerts, 
+        score=security_score, 
+        is_monitoring=is_monitoring,
+        severity_data=severity_data,
+        timeline_labels=timeline_labels,
+        timeline_data=timeline_data,
+        scatter_data=scatter_data,
+        threat_data=threat_data
+    )
+
+@app.route("/alerts")
+def alerts_page():
     if 'user' not in session or session['user']['role'] != 'owner':
         return redirect(url_for('login'))
         
@@ -107,21 +208,58 @@ def owner_dashboard():
             LEFT JOIN feedback f ON a.id = f.alert_id
             WHERE f.id IS NULL
             ORDER BY a.created_at DESC
-            LIMIT 15;
         """)
         alerts = cur.fetchall()
-        
-        cur.execute("SELECT COUNT(*) FROM predictions WHERE is_anomaly = true")
-        anomalies = cur.fetchone()['count']
-        security_score = max(0, 100 - anomalies)
-        
     conn.close()
-    return render_template("owner_dashboard.html", user=session['user'], alerts=alerts, score=security_score)
+    
+    return render_template("alerts.html", user=session['user'], alerts=alerts)
 
 @app.route("/connect_network", methods=["POST"])
 def connect_network():
+    global producer_process
+    if 'user' not in session: return redirect(url_for('login'))
+    
     subnet = request.form.get("subnet")
-    flash(f"Successfully connected to network {subnet}! Monitoring started.", "success")
+    
+    if producer_process is None or producer_process.poll() is not None:
+        producer_path = os.path.join(PROJECT_ROOT, "ml_pipeline", "producer.py")
+        
+        cmd = [
+            sys.executable, 
+            producer_path, 
+            "--rate", "2", 
+            "--anomaly-rate", "0.1",
+            "--max-events", "0"
+        ]
+        
+        creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
+        producer_process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=creation_flags
+        )
+        flash(f"Successfully connected to network {subnet}! Monitoring started.", "success")
+    else:
+        flash(f"Network {subnet} is already being monitored.", "info")
+        
+    return redirect(url_for("owner_dashboard"))
+
+@app.route("/disconnect_network", methods=["POST"])
+def disconnect_network():
+    global producer_process
+    if 'user' not in session: return redirect(url_for('login'))
+    
+    if producer_process is not None and producer_process.poll() is None:
+        if os.name == 'nt':  # Windows
+            subprocess.call(['taskkill', '/F', '/T', '/PID', str(producer_process.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            producer_process.terminate()
+        producer_process = None
+        flash("Network monitoring stopped.", "success")
+    else:
+        flash("No network is currently being monitored.", "error")
+        
     return redirect(url_for("owner_dashboard"))
 
 @app.route("/feedback", methods=["POST"])
@@ -132,7 +270,7 @@ def handle_feedback():
         from scripts.feedback_db import submit_feedback
         submit_feedback(int(alert_id), is_correct)
         flash("Threat analysis recorded successfully.", "success")
-    return redirect(url_for("owner_dashboard"))
+    return redirect(request.referrer or url_for("owner_dashboard"))
 
 @app.route("/model_feedback", methods=["POST"])
 def model_feedback():
@@ -144,8 +282,6 @@ def model_feedback():
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            # We save the rating and comment into the 'comments' column.
-            # We ensure 'is_correct' is NULL (since this isn't an alert confirmation).
             cur.execute("""
                 INSERT INTO feedback (user_id, comments, is_correct)
                 VALUES (%s, %s, NULL)
@@ -252,7 +388,6 @@ def admin_feedback():
     
     conn = get_connection()
     with conn.cursor() as cur:
-        # Only show general model feedback (is_correct IS NULL)
         cur.execute("""
             SELECT f.id, f.comments, f.submitted_at, u.name, u.sme_type
             FROM feedback f
@@ -399,6 +534,41 @@ def producer_status():
     global producer_process
     is_running = producer_process is not None and producer_process.poll() is None
     return {"status": "running" if is_running else "stopped"}
+
+# ==========================================
+# MODEL RETRAIN ROUTES
+# ==========================================
+@app.route("/admin/model/retrain", methods=["POST"])
+def retrain_model():
+    global retrain_process
+    if 'user' not in session or session['user']['role'] != 'admin': return redirect(url_for('login'))
+    
+    if retrain_process is not None and retrain_process.poll() is None:
+        flash("Model retraining is already in progress.", "error")
+        return redirect(url_for("admin_feedback"))
+        
+    train_script = os.path.join(PROJECT_ROOT, "ml_pipeline", "train_model.py")
+    
+    cmd = [sys.executable, train_script]
+    creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
+    
+    retrain_process = subprocess.Popen(
+        cmd,
+        creationflags=creation_flags
+    )
+    
+    flash("Model retraining started! This may take a few minutes. Check the terminal for logs.", "success")
+    return redirect(url_for("admin_feedback"))
+
+@app.route("/admin/model/status")
+def model_status():
+    global retrain_process
+    if retrain_process is None:
+        return {"status": "idle"}
+    elif retrain_process.poll() is None:
+        return {"status": "training"}
+    else:
+        return {"status": "completed"}
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

@@ -7,9 +7,20 @@
         <h1>Security Dashboard</h1>
         <p>Welcome back, {{ user.name }}</p>
     </div>
-    <div style="display: flex; gap: 10px;">
+    <div style="display: flex; gap: 10px; align-items: center;">
         <button class="btn" onclick="window.location.href='/reports'">Download Report</button>
-        <button class="btn btn-primary" onclick="openNetworkModal()">Connect Network</button>
+        
+        {% if is_monitoring %}
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: var(--low); background: rgba(18, 183, 106, 0.1); padding: 10px 15px; border-radius: 20px;">
+                <div style="width: 10px; height: 10px; background: var(--low); border-radius: 50%; animation: pulse 1.5s infinite;"></div>
+                Monitoring Active
+            </div>
+            <form method="POST" action="/disconnect_network" style="margin: 0;">
+                <button type="submit" class="btn" style="background: var(--high); color: white; border-color: var(--high);">Disconnect</button>
+            </form>
+        {% else %}
+            <button class="btn btn-primary" onclick="openNetworkModal()">Connect Network</button>
+        {% endif %}
     </div>
 </div>
 
@@ -23,48 +34,58 @@
     </div>
     <div class="stat-card">
         <div class="stat-card-label">Active Alerts</div>
-        <div class="stat-card-value"><span id="alertCounter">0</span></div>
+        <div class="stat-card-value">
+            <a href="/alerts" style="color: inherit; text-decoration: none;">
+                <span id="alertCounter">0</span>
+            </a>
+        </div>
         <div class="stat-card-subtext">Needs your review</div>
     </div>
 </div>
 
 <!-- Chart Grid: 2x2 Layout -->
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px;">
-    <!-- Chart 1: Bar -->
     <div style="background: white; padding: 30px; border-radius: 24px;">
         <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 20px;">Alerts by Severity</h3>
         <div style="height: 200px;"><canvas id="severityChart"></canvas></div>
     </div>
-    <!-- Chart 2: Line (Timeline) -->
     <div style="background: white; padding: 30px; border-radius: 24px;">
         <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 20px;">Anomaly Detection Timeline</h3>
         <div style="height: 200px;"><canvas id="timelineChart"></canvas></div>
     </div>
-    <!-- Chart 3: Scatter Plot (Anomaly Scores) -->
     <div style="background: white; padding: 30px; border-radius: 24px;">
         <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 20px;">Anomaly Score Distribution</h3>
         <div style="height: 200px;"><canvas id="scatterChart"></canvas></div>
     </div>
-    <!-- Chart 4: Doughnut (Alert Types) -->
     <div style="background: white; padding: 30px; border-radius: 24px;">
         <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 20px;">Threat Categories</h3>
         <div style="height: 200px;"><canvas id="doughnutChart"></canvas></div>
     </div>
 </div>
 
-<h2 style="font-family: 'Playfair Display', serif; font-size: 32px; margin-bottom: 20px;">Recent Alerts</h2>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2 style="font-family: 'Playfair Display', serif; font-size: 32px;">Recent Alerts</h2>
+    <a href="/alerts" class="btn btn-sm" style="text-decoration: none;">View All Alerts</a>
+</div>
+
 <div class="alert-list">
     {% if alerts %}
         {% for alert in alerts %}
             <div class="alert-card" onclick="openModal('{{ alert.id }}', '{{ alert.severity }}', '{{ alert.event_id[:8] }}', '{{ alert.recommendation }}', '{{ alert.score }}', '{{ alert.created_at.strftime('%b %d, %H:%M') }}')">
-                <div class="alert-info">
-                    <div class="severity-dot {{ alert.severity }}"></div>
-                    <div>
-                        <div class="alert-title">{{ alert.severity | title }} Threat Detected</div>
-                        <div class="alert-meta">Event {{ alert.event_id[:8] }} &middot; {{ alert.created_at.strftime('%b %d at %H:%M') }}</div>
+                <div class="alert-info" style="flex: 1;">
+                    <div class="severity-dot {{ alert.severity }}" style="margin-top: 5px;"></div>
+                    <div style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div class="alert-title">{{ alert.severity | title }} Threat Detected</div>
+                            <div style="font-size: 12px; color: var(--muted);">Event {{ alert.event_id[:8] }}</div>
+                        </div>
+                        <div style="font-size: 14px; color: var(--text); margin: 8px 0; font-weight: 500;">
+                            {{ alert.recommendation }}
+                        </div>
+                        <div class="alert-meta">{{ alert.created_at.strftime('%b %d at %H:%M') }}</div>
                     </div>
                 </div>
-                <button class="btn btn-sm">Analyze</button>
+                <button class="btn btn-sm" style="margin-left: 15px;">Analyze</button>
             </div>
         {% endfor %}
     {% else %}
@@ -131,6 +152,14 @@
     </div>
 </div>
 
+<style>
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(18, 183, 106, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(18, 183, 106, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(18, 183, 106, 0); }
+    }
+</style>
+
 <script>
     // --- MODAL LOGIC ---
     function openModal(id, severity, eventId, recommendation, score, time) {
@@ -166,33 +195,46 @@
         }, stepTime);
     }
 
-    // Get the actual values from Flask and start animation on page load
     window.onload = function() {
         const finalScore = parseInt("{{ score }}");
-        const finalAlerts = parseInt("{{ alerts|length }}");
+        const finalAlerts = parseInt("{{ total_alerts }}");
         
-        // 1.5 second animation
         animateValue("scoreCounter", 0, finalScore, 1500); 
         animateValue("alertCounter", 0, finalAlerts, 1500);
     };
 
-    // --- CHARTS ---
-    // 1. Bar Chart
+    // --- REAL DYNAMIC CHARTS ---
+    // 1. Bar Chart (Severity)
     new Chart(document.getElementById('severityChart'), {
         type: 'bar',
         data: {
             labels: ['High', 'Medium', 'Low'],
-            datasets: [{ data: [{{ alerts|selectattr('severity', 'equalto', 'high')|list|length }}, {{ alerts|selectattr('severity', 'equalto', 'medium')|list|length }}, {{ alerts|selectattr('severity', 'equalto', 'low')|list|length }}], backgroundColor: ['#D92D20', '#F79009', '#12B76A'], borderRadius: 8 }]
+            datasets: [{ 
+                data: [
+                    {{ severity_data.get('high', 0) }}, 
+                    {{ severity_data.get('medium', 0) }}, 
+                    {{ severity_data.get('low', 0) }}
+                ], 
+                backgroundColor: ['#D92D20', '#F79009', '#12B76A'], 
+                borderRadius: 8 
+            }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
 
-    // 2. Line Chart
+    // 2. Line Chart (Timeline)
     new Chart(document.getElementById('timelineChart'), {
         type: 'line',
         data: {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [{ data: [12, 19, 3, 5, 2, 3, 7], borderColor: '#FF6B4A', tension: 0.4, borderWidth: 3, fill: true, backgroundColor: 'rgba(255, 107, 74, 0.1)' }]
+            labels: {{ timeline_labels | tojson }},
+            datasets: [{ 
+                data: {{ timeline_data | tojson }}, 
+                borderColor: '#FF6B4A', 
+                tension: 0.4, 
+                borderWidth: 3, 
+                fill: true, 
+                backgroundColor: 'rgba(255, 107, 74, 0.1)' 
+            }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
@@ -203,24 +245,41 @@
         data: {
             datasets: [{
                 label: 'Anomalies',
-                data: [
-                    {x: 1, y: -0.05}, {x: 2, y: -0.12}, {x: 3, y: 0.02}, {x: 4, y: -0.08}, {x: 5, y: 0.05},
-                    {x: 6, y: -0.15}, {x: 7, y: 0.01}, {x: 8, y: -0.09}, {x: 9, y: 0.03}, {x: 10, y: -0.11}
-                ],
+                data: {{ scatter_data | tojson }},
                 backgroundColor: '#2C1E16'
             }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false } } }
     });
 
-    // 4. Doughnut Chart
+    // 4. Doughnut Chart (Threat Categories)
     new Chart(document.getElementById('doughnutChart'), {
         type: 'doughnut',
         data: {
-            labels: ['Exfiltration', 'Port Scan', 'Brute Force'],
-            datasets: [{ data: [30, 50, 20], backgroundColor: ['#FF6B4A', '#FFB8A8', '#EAE3DC'], borderWidth: 0 }]
+            labels: [
+                {% for row in threat_data %}
+                    "{{ (row.recommendation or 'Unknown')[:20] }}...",
+                {% endfor %}
+            ],
+            datasets: [{ 
+                data: [
+                    {% for row in threat_data %}
+                        {{ row.count }},
+                    {% endfor %}
+                ], 
+                backgroundColor: ['#FF6B4A', '#FFB8A8', '#EAE3DC', '#2C1E16', '#12B76A'], 
+                borderWidth: 0 
+            }]
         },
         options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
     });
 </script>
+
+<script>
+    // Auto-refresh the page every 10 seconds to show real-time data
+    setTimeout(function(){
+       window.location.reload(1);
+    }, 10000);
+</script>
+
 {% endblock %}

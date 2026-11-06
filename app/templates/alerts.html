@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}All Alerts - BI-Safe{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>All Active Alerts</h1>
+        <p>Every anomaly currently requiring your review.</p>
+    </div>
+    <button class="btn" onclick="location.reload()">Refresh List</button>
+</div>
+
+<div class="alert-list">
+    {% if alerts %}
+        {% for alert in alerts %}
+            <div class="alert-card" onclick="openModal('{{ alert.id }}', '{{ alert.severity }}', '{{ alert.event_id[:8] }}', '{{ alert.recommendation }}', '{{ alert.score }}', '{{ alert.created_at.strftime('%b %d, %H:%M') }}')">
+                <div class="alert-info" style="flex: 1;">
+                    <div class="severity-dot {{ alert.severity }}" style="margin-top: 5px;"></div>
+                    <div style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div class="alert-title">{{ alert.severity | title }} Threat Detected</div>
+                            <div style="font-size: 12px; color: var(--muted);">Event {{ alert.event_id[:8] }}</div>
+                        </div>
+                        <div style="font-size: 14px; color: var(--text); margin: 8px 0; font-weight: 500;">
+                            {{ alert.recommendation }}
+                        </div>
+                        <div class="alert-meta">{{ alert.created_at.strftime('%b %d at %H:%M') }}</div>
+                    </div>
+                </div>
+                <button class="btn btn-sm" style="margin-left: 15px;">Analyze</button>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: var(--muted); font-size: 16px;">No active alerts. Your network is secure.</p>
+    {% endif %}
+</div>
+
+<!-- Alert Modal -->
+<div class="modal-overlay" id="alertModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">X</button>
+        <div id="modal-severity" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px;"></div>
+        <h2 style="font-family: 'Playfair Display', serif; font-size: 36px; margin-bottom: 10px;">Threat Analysis</h2>
+        <p style="font-size: 13px; color: var(--muted);" id="modal-event-info"></p>
+        <div class="recommendation-box" id="modal-recommendation"></div>
+        
+        <form method="POST" action="/feedback" class="action-buttons">
+            <input type="hidden" name="alert_id" id="modal-alert-id">
+            <button type="submit" name="is_correct" value="true" class="btn btn-primary" style="background: var(--low); border-color: var(--low); color: white;">Confirm Threat</button>
+            <button type="submit" name="is_correct" value="false" class="btn" style="background: #EAE3DC; border-color: transparent;">False Alarm</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(id, severity, eventId, recommendation, score, time) {
+        document.getElementById('modal-alert-id').value = id;
+        const sevEl = document.getElementById('modal-severity');
+        sevEl.innerText = severity + " Severity";
+        sevEl.style.color = severity === 'high' ? 'var(--high)' : (severity === 'medium' ? 'var(--medium)' : 'var(--low)');
+        document.getElementById('modal-event-info').innerText = `Event ${eventId} • ${time} • Score: ${parseFloat(score).toFixed(4)}`;
+        document.getElementById('modal-recommendation').innerText = recommendation;
+        document.getElementById('alertModal').classList.add('active');
+    }
+    function closeModal() { document.getElementById('alertModal').classList.remove('active'); }
+    document.getElementById('alertModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+</script>
+{% endblock %}

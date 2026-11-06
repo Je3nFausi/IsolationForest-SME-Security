@@ -22,6 +22,7 @@
                 {% if session.user.role == 'owner' %}
                     <!-- SME Owner Links -->
                     <a href="{{ url_for('owner_dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'owner_dashboard' %}active{% endif %}">Dashboard</a>
+                    <a href="{{ url_for('alerts_page') }}" class="sidebar-nav-item {% if request.endpoint == 'alerts_page' %}active{% endif %}">All Alerts</a>
                     <a href="{{ url_for('reports') }}" class="sidebar-nav-item {% if request.endpoint == 'reports' %}active{% endif %}">Reports</a>
                     <a href="{{ url_for('settings') }}" class="sidebar-nav-item {% if request.endpoint == 'settings' %}active{% endif %}">Settings</a>
                 {% else %}
