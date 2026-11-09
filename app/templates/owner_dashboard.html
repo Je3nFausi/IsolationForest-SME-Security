@@ -178,7 +178,7 @@
     function closeNetworkModal() { document.getElementById('networkModal').classList.remove('active'); }
     document.getElementById('networkModal').addEventListener('click', function(e) { if (e.target === this) closeNetworkModal(); });
 
-    // --- COUNT UP ANIMATION ---
+    // --- COUNT UP ANIMATION (ONLY ON FIRST LOAD) ---
     function animateValue(id, start, end, duration) {
         if (start === end) return;
         var range = end - start;
@@ -199,11 +199,24 @@
         const finalScore = parseInt("{{ score }}");
         const finalAlerts = parseInt("{{ total_alerts }}");
         
-        animateValue("scoreCounter", 0, finalScore, 1500); 
-        animateValue("alertCounter", 0, finalAlerts, 1500);
+        // Check if this is the first time the page has loaded in this session
+        const hasAnimated = sessionStorage.getItem('dashboardAnimated');
+
+        if (!hasAnimated) {
+            // First time loading: Animate the numbers
+            animateValue("scoreCounter", 0, finalScore, 1500); 
+            animateValue("alertCounter", 0, finalAlerts, 1500);
+            
+            // Remember that we animated, so we don't do it on the next auto-refresh
+            sessionStorage.setItem('dashboardAnimated', 'true');
+        } else {
+            // Just auto-refreshing: Snap directly to the final numbers
+            document.getElementById("scoreCounter").textContent = finalScore;
+            document.getElementById("alertCounter").textContent = finalAlerts;
+        }
     };
 
-    // --- REAL DYNAMIC CHARTS ---
+    // --- REAL DYNAMIC CHARTS (ANIMATION DISABLED FOR REFRESH) ---
     // 1. Bar Chart (Severity)
     new Chart(document.getElementById('severityChart'), {
         type: 'bar',
@@ -219,7 +232,7 @@
                 borderRadius: 8 
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        options: { animation: false, responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
 
     // 2. Line Chart (Timeline)
@@ -236,7 +249,7 @@
                 backgroundColor: 'rgba(255, 107, 74, 0.1)' 
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        options: { animation: false, responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
 
     // 3. Scatter Chart (Score Distribution)
@@ -249,7 +262,7 @@
                 backgroundColor: '#2C1E16'
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false } } }
+        options: { animation: false, responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false } } }
     });
 
     // 4. Doughnut Chart (Threat Categories)
@@ -271,7 +284,7 @@
                 borderWidth: 0 
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+        options: { animation: false, responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
     });
 </script>
 

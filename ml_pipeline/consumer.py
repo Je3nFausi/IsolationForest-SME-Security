@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from scripts.email_sender import send_alert_email
 from database.db import get_connection
 from alerts.recommender import get_recommendation
 
@@ -120,7 +121,7 @@ def main():
     consumer = KafkaConsumer(
         args.topic,
         bootstrap_servers=[args.broker],
-        group_id=args.group,
+        group_id="anomaly-scorer-v6",
         value_deserializer=lambda m: json.loads(m.decode("utf-8")),
         auto_offset_reset="latest",
         enable_auto_commit=True,
@@ -181,7 +182,7 @@ def main():
             if is_anomaly and prediction_id is not None:
                 print(f"[{seen:5d}] 🚨 ANOMALY - FIRING ALERTS for {eid_short}...")
                 print(f"  ↳ Action: {recommendation}")
-                send_email_alert(eid, score, truth, severity, recommendation)
+                send_alert_email(eid, score, severity, recommendation)
 
             marker = "⚠️  ANOMALY" if is_anomaly else "✅ normal "
             if is_anomaly:
