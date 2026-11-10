@@ -102,7 +102,6 @@ def owner_dashboard():
         
     is_monitoring = producer_process is not None and producer_process.poll() is None
         
-    # Initialize chart variables with safe defaults BEFORE the DB call
     severity_data = {}
     timeline_labels = ['No Data']
     timeline_data = [0]
@@ -115,7 +114,6 @@ def owner_dashboard():
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            # 1. Fetch recent alerts
             cur.execute("""
                 SELECT a.id, a.event_id, a.severity, a.recommendation, a.created_at, p.score 
                 FROM alerts a
@@ -127,7 +125,6 @@ def owner_dashboard():
             """)
             alerts = cur.fetchall()
             
-            # 2. Count TOTAL unresolved alerts
             cur.execute("""
                 SELECT COUNT(*) FROM alerts a
                 LEFT JOIN feedback f ON a.id = f.alert_id
@@ -135,7 +132,6 @@ def owner_dashboard():
             """)
             total_alerts = cur.fetchone()['count']
 
-            # 3. Security Score
             cur.execute("""
                 SELECT COUNT(*) FROM (
                     SELECT is_anomaly FROM predictions ORDER BY id DESC LIMIT 50
@@ -144,14 +140,10 @@ def owner_dashboard():
             recent_anomalies = cur.fetchone()['count']
             security_score = max(0, 100 - (recent_anomalies * 2))
 
-            # --- CHART DATA QUERIES ---
-            
-            # Chart 1
             cur.execute("SELECT severity, COUNT(*) as count FROM alerts GROUP BY severity")
             for row in cur.fetchall():
                 severity_data[row['severity']] = row['count']
             
-            # Chart 2
             cur.execute("""
                 SELECT DATE(timestamp) as day, COUNT(*) as count 
                 FROM predictions 
@@ -163,13 +155,11 @@ def owner_dashboard():
                 timeline_labels = [row['day'].strftime('%a') for row in timeline_rows]
                 timeline_data = [row['count'] for row in timeline_rows]
 
-            # Chart 3
             cur.execute("SELECT score FROM predictions WHERE is_anomaly = true ORDER BY id DESC LIMIT 20")
             scatter_rows = cur.fetchall()
             if scatter_rows:
                 scatter_data = [{"x": i+1, "y": float(row['score'])} for i, row in enumerate(scatter_rows)]
 
-            # Chart 4
             cur.execute("SELECT recommendation, COUNT(*) as count FROM alerts GROUP BY recommendation LIMIT 5")
             threat_rows = cur.fetchall()
             if threat_rows:
@@ -251,7 +241,7 @@ def disconnect_network():
     if 'user' not in session: return redirect(url_for('login'))
     
     if producer_process is not None and producer_process.poll() is None:
-        if os.name == 'nt':  # Windows
+        if os.name == 'nt':
             subprocess.call(['taskkill', '/F', '/T', '/PID', str(producer_process.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         else:
             producer_process.terminate()
@@ -353,17 +343,52 @@ def admin_dashboard():
         return redirect(url_for('login'))
         
     conn = get_connection()
-    with conn.cursor() as cur:
-        cur.execute("SELECT p.is_anomaly, p.ground_truth FROM alerts a JOIN predictions p ON a.prediction_id = p.id")
-        rows = cur.fetchall()
-        tp = sum(1 for r in rows if r['is_anomaly'] and r['ground_truth'] == 'anomaly')
-        fp = sum(1 for r in rows if r['is_anomaly'] and r['ground_truth'] == 'normal')
-        fn = sum(1 for r in rows if not r['is_anomaly'] and r['ground_truth'] == 'anomaly')
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-    conn.close()
+    drift_labels = []
+    drift_data = []
     
-    return render_template("admin_dashboard.html", user=session['user'], precision=precision*100, recall=recall*100, tp=tp, fp=fp, fn=fn)
+    try:
+        with conn.cursor() as cur:
+            # 1. Calculate overall Precision and Recall
+            cur.execute("SELECT p.is_anomaly, p.ground_truth FROM alerts a JOIN predictions p ON a.prediction_id = p.id")
+            rows = cur.fetchall()
+            tp = sum(1 for r in rows if r['is_anomaly'] and r['ground_truth'] == 'anomaly')
+            fp = sum(1 for r in rows if r['is_anomaly'] and r['ground_truth'] == 'normal')
+            fn = sum(1 for r in rows if not r['is_anomaly'] and r['ground_truth'] == 'anomaly')
+            precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+            recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+
+            # 2. Calculate REAL Model Drift (Last 5 batches of 100)
+            cur.execute("""
+                SELECT is_anomaly, ground_truth 
+                FROM predictions 
+                ORDER BY id DESC 
+                LIMIT 500
+            """)
+            recent_preds = cur.fetchall()
+            recent_preds.reverse()
+            
+            batches = [recent_preds[i:i + 100] for i in range(0, len(recent_preds), 100)]
+            
+            for i, batch in enumerate(batches):
+                b_tp = sum(1 for r in batch if r['is_anomaly'] and r['ground_truth'] == 'anomaly')
+                b_fp = sum(1 for r in batch if r['is_anomaly'] and r['ground_truth'] == 'normal')
+                b_fn = sum(1 for r in batch if not r['is_anomaly'] and r['ground_truth'] == 'anomaly')
+                
+                b_p = b_tp / (b_tp + b_fp) if (b_tp + b_fp) > 0 else 0
+                b_r = b_tp / (b_tp + b_fn) if (b_tp + b_fn) > 0 else 0
+                b_f1 = 2 * (b_p * b_r) / (b_p + b_r) if (b_p + b_r) > 0 else 0
+                
+                drift_labels.append(f"Batch {i+1}")
+                drift_data.append(round(b_f1, 3))
+
+    finally:
+        conn.close()
+        
+    if not drift_data:
+        drift_labels = ['No Data']
+        drift_data = [0]
+        
+    return render_template("admin_dashboard.html", user=session['user'], precision=precision*100, recall=recall*100, tp=tp, fp=fp, fn=fn, drift_labels=drift_labels, drift_data=drift_data)
 
 @app.route("/admin/producer")
 def admin_producer():
@@ -517,9 +542,9 @@ def stop_producer():
     if 'user' not in session or session['user']['role'] != 'admin': return redirect(url_for('login'))
     
     if producer_process is not None and producer_process.poll() is None:
-        if os.name == 'nt':  # Windows
+        if os.name == 'nt':
             subprocess.call(['taskkill', '/F', '/T', '/PID', str(producer_process.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        else:  # Mac/Linux
+        else:
             producer_process.terminate()
             
         producer_process = None

@@ -2,52 +2,80 @@
 {% block title %}All Alerts - BI-Safe{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header" style="margin-bottom: 20px;">
     <div>
-        <h1>All Active Alerts</h1>
-        <p>Every anomaly currently requiring your review.</p>
+        <!-- Smaller header -->
+        <h1 style="font-size: 32px; font-weight: 600;">All Active Alerts</h1>
+        <!-- Smaller subtext -->
+        <p style="font-size: 14px; margin-top: 5px;">Every anomaly currently requiring your review.</p>
     </div>
-    <button class="btn" onclick="location.reload()">Refresh List</button>
+    <button class="btn btn-sm" onclick="location.reload()">Refresh List</button>
 </div>
 
-<div class="alert-list">
+<div class="alert-list" style="gap: 12px;">
     {% if alerts %}
         {% for alert in alerts %}
-            <div class="alert-card" onclick="openModal('{{ alert.id }}', '{{ alert.severity }}', '{{ alert.event_id[:8] }}', '{{ alert.recommendation }}', '{{ alert.score }}', '{{ alert.created_at.strftime('%b %d, %H:%M') }}')">
+            <div class="alert-card" 
+                 onclick="openModal('{{ alert.id }}', '{{ alert.severity }}', '{{ alert.event_id[:8] }}', '{{ alert.recommendation }}', '{{ alert.score }}', '{{ alert.created_at.strftime('%b %d, %H:%M') }}')" 
+                 style="padding: 20px 25px; {% if alert.severity == 'high' %}border-left: 6px solid var(--high);{% elif alert.severity == 'medium' %}border-left: 6px solid var(--medium);{% else %}border-left: 6px solid var(--low);{% endif %}">
+                
                 <div class="alert-info" style="flex: 1;">
-                    <div class="severity-dot {{ alert.severity }}" style="margin-top: 5px;"></div>
                     <div style="width: 100%;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                            <div class="alert-title">{{ alert.severity | title }} Threat Detected</div>
-                            <div style="font-size: 12px; color: var(--muted);">Event {{ alert.event_id[:8] }}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                            <!-- Smaller title -->
+                            <div class="alert-title" style="font-size: 18px; color: var(--text);">
+                                {% if alert.severity == 'high' %}Attention Needed{% elif alert.severity == 'medium' %}Worth a Quick Check{% else %}Minor Note{% endif %}
+                            </div>
+                            <!-- Smaller timestamp -->
+                            <div style="font-size: 11px; color: var(--muted); background: #FDFBF7; padding: 4px 10px; border-radius: 20px; border: 1px solid #EAE3DC;">
+                                {{ alert.created_at.strftime('%b %d, %H:%M') }}
+                            </div>
                         </div>
-                        <div style="font-size: 14px; color: var(--text); margin: 8px 0; font-weight: 500;">
-                            {{ alert.recommendation }}
+                        
+                        <!-- Smaller description -->
+                        <div style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">
+                            We noticed: <strong style="color: var(--text);">{{ alert.recommendation }}</strong>
                         </div>
-                        <div class="alert-meta">{{ alert.created_at.strftime('%b %d at %H:%M') }}</div>
+                        
+                        <button class="btn btn-sm" style="background: var(--text); color: white; border: none; padding: 6px 12px; font-size: 12px;">See Details</button>
                     </div>
                 </div>
-                <button class="btn btn-sm" style="margin-left: 15px;">Analyze</button>
             </div>
         {% endfor %}
     {% else %}
-        <p style="color: var(--muted); font-size: 16px;">No active alerts. Your network is secure.</p>
+        <div style="text-align: center; padding: 40px; background: white; border-radius: 24px; box-shadow: 0 5px 20px rgba(44, 30, 22, 0.03);">
+            <div style="font-size: 30px; margin-bottom: 10px;">✨</div>
+            <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; color: var(--text);">All clear!</h3>
+            <p style="color: var(--muted); margin-top: 5px; font-size: 14px;">We haven't detected any threats on your network.</p>
+        </div>
     {% endif %}
 </div>
 
 <!-- Alert Modal -->
 <div class="modal-overlay" id="alertModal">
-    <div class="modal-content">
+    <div class="modal-content" style="width: 500px; text-align: center;">
         <button class="modal-close" onclick="closeModal()">X</button>
-        <div id="modal-severity" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px;"></div>
-        <h2 style="font-family: 'Playfair Display', serif; font-size: 36px; margin-bottom: 10px;">Threat Analysis</h2>
-        <p style="font-size: 13px; color: var(--muted);" id="modal-event-info"></p>
-        <div class="recommendation-box" id="modal-recommendation"></div>
         
-        <form method="POST" action="/feedback" class="action-buttons">
+        <div id="modal-icon" style="font-size: 50px; margin-bottom: 20px;">⚠️</div>
+        
+        <h2 style="font-family: 'Playfair Display', serif; font-size: 32px; margin-bottom: 10px; color: var(--text);" id="modal-title">Something Needs Your Attention</h2>
+        <p style="font-size: 15px; color: var(--muted); margin-bottom: 20px;" id="modal-event-info"></p>
+        
+        <div style="background: #FDFBF7; padding: 25px; border-radius: 20px; text-align: left; margin-bottom: 25px; border: 1px solid #EAE3DC;">
+            <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 10px;">What did we find?</h4>
+            <p style="font-size: 16px; color: var(--text); line-height: 1.6;" id="modal-recommendation"></p>
+        </div>
+
+        <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 15px;">Did we get this right?</h4>
+        
+        <form method="POST" action="/feedback" class="action-buttons" style="flex-direction: column;">
             <input type="hidden" name="alert_id" id="modal-alert-id">
-            <button type="submit" name="is_correct" value="true" class="btn btn-primary" style="background: var(--low); border-color: var(--low); color: white;">Confirm Threat</button>
-            <button type="submit" name="is_correct" value="false" class="btn" style="background: #EAE3DC; border-color: transparent;">False Alarm</button>
+            <button type="submit" name="is_correct" value="true" class="btn btn-primary" style="background: var(--high); border-color: var(--high); color: white; padding: 15px; font-size: 16px; border-radius: 12px;">
+                Yes, this is a real threat
+            </button>
+            <button type="submit" name="is_correct" value="false" class="btn" style="background: #F3F4F6; border-color: transparent; color: var(--text); padding: 15px; font-size: 16px; border-radius: 12px; margin-top: 5px;">
+                No, this is a false alarm
+            </button>
         </form>
     </div>
 </div>
@@ -55,11 +83,24 @@
 <script>
     function openModal(id, severity, eventId, recommendation, score, time) {
         document.getElementById('modal-alert-id').value = id;
-        const sevEl = document.getElementById('modal-severity');
-        sevEl.innerText = severity + " Severity";
-        sevEl.style.color = severity === 'high' ? 'var(--high)' : (severity === 'medium' ? 'var(--medium)' : 'var(--low)');
-        document.getElementById('modal-event-info').innerText = `Event ${eventId} • ${time} • Score: ${parseFloat(score).toFixed(4)}`;
+        
+        const iconEl = document.getElementById('modal-icon');
+        const titleEl = document.getElementById('modal-title');
+        
+        if (severity === 'high') {
+            iconEl.innerText = "🚨";
+            titleEl.innerText = "Urgent Action Needed";
+        } else if (severity === 'medium') {
+            iconEl.innerText = "⚠️";
+            titleEl.innerText = "Worth a Quick Look";
+        } else {
+            iconEl.innerText = "ℹ️";
+            titleEl.innerText = "A Minor Note";
+        }
+
+        document.getElementById('modal-event-info').innerText = `Detected on ${time}`;
         document.getElementById('modal-recommendation').innerText = recommendation;
+        
         document.getElementById('alertModal').classList.add('active');
     }
     function closeModal() { document.getElementById('alertModal').classList.remove('active'); }

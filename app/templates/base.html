@@ -21,23 +21,41 @@
             <nav class="sidebar-nav">
                 {% if session.user.role == 'owner' %}
                     <!-- SME Owner Links -->
-                    <a href="{{ url_for('owner_dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'owner_dashboard' %}active{% endif %}">Dashboard</a>
-                    <a href="{{ url_for('alerts_page') }}" class="sidebar-nav-item {% if request.endpoint == 'alerts_page' %}active{% endif %}">All Alerts</a>
-                    <a href="{{ url_for('reports') }}" class="sidebar-nav-item {% if request.endpoint == 'reports' %}active{% endif %}">Reports</a>
-                    <a href="{{ url_for('settings') }}" class="sidebar-nav-item {% if request.endpoint == 'settings' %}active{% endif %}">Settings</a>
+                    <a href="{{ url_for('owner_dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'owner_dashboard' %}active{% endif %}">
+                        <span style="font-size: 18px; margin-right: 15px;">📊</span> <span class="nav-text">Dashboard</span>
+                    </a>
+                    <a href="{{ url_for('alerts_page') }}" class="sidebar-nav-item {% if request.endpoint == 'alerts_page' %}active{% endif %}">
+                        <span style="font-size: 18px; margin-right: 15px;">🚨</span> <span class="nav-text">All Alerts</span>
+                    </a>
+                    <a href="{{ url_for('reports') }}" class="sidebar-nav-item {% if request.endpoint == 'reports' %}active{% endif %}">
+                        <span style="font-size: 18px; margin-right: 15px;">📄</span> <span class="nav-text">Reports</span>
+                    </a>
+                    <a href="{{ url_for('settings') }}" class="sidebar-nav-item {% if request.endpoint == 'settings' %}active{% endif %}">
+                        <span style="font-size: 18px; margin-right: 15px;">⚙️</span> <span class="nav-text">Settings</span>
+                    </a>
                 {% else %}
                     <!-- System Admin Links -->
-                    <a href="{{ url_for('admin_dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">Overview</a>
-                    <a href="{{ url_for('admin_producer') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_producer' %}active{% endif %}">Producer Control</a>
-                    <a href="{{ url_for('admin_users') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_users' %}active{% endif %}">User Management</a>
-                    <a href="{{ url_for('admin_feedback') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_feedback' %}active{% endif %}">Model Feedback</a>
+                    <a href="{{ url_for('admin_dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                        <span style="font-size: 18px; margin-right: 15px;">📈</span> <span class="nav-text">Overview</span>
+                    </a>
+                    <a href="{{ url_for('admin_producer') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_producer' %}active{% endif %}">
+                        <span style="font-size: 18px; margin-right: 15px;">🎛️</span> <span class="nav-text">Simulator</span>
+                    </a>
+                    <a href="{{ url_for('admin_users') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_users' %}active{% endif %}">
+                        <span style="font-size: 18px; margin-right: 15px;">👥</span> <span class="nav-text">Users</span>
+                    </a>
+                    <a href="{{ url_for('admin_feedback') }}" class="sidebar-nav-item {% if request.endpoint == 'admin_feedback' %}active{% endif %}">
+                        <span style="font-size: 18px; margin-right: 15px;">💬</span> <span class="nav-text">Feedback</span>
+                    </a>
                 {% endif %}
             </nav>
 
             <div class="sidebar-footer">
-                <p style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">{{ session.user.name }}</p>
-                <p style="font-size: 11px; color: var(--muted); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">{{ session.user.role }}</p>
-                <a href="{{ url_for('logout') }}" class="sidebar-logout">Log out</a>
+                <p>{{ session.user.name }}</p>
+                <span>{{ session.user.role }}</span>
+                <a href="{{ url_for('logout') }}" class="sidebar-logout">
+                    <span style="font-size: 16px; margin-right: 15px;">🚪</span> <span class="nav-text">Log out</span>
+                </a>
             </div>
         </aside>
 

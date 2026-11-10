@@ -168,7 +168,10 @@ def main():
                     if is_anomaly:
                         # Generate recommendation
                         severity, recommendation = get_recommendation(row)
-                        
+
+                        #Make the recommendation dynamic by adding the event ID
+                        dynamic_recommendation = f"{recommendation} (Ref: {eid[:6]})"
+
                         # Save to alerts table
                         cur.execute(INSERT_ALERT_SQL, (
                             prediction_id, eid, severity, recommendation

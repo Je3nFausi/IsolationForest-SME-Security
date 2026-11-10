@@ -1,38 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Admin Overview - BI-Safe{% endblock %}
+{% block title %}System Overview - BI-Safe{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header" style="margin-bottom: 20px;">
     <div>
-        <h1>System Overview</h1>
-        <p>Administrator: {{ user.name }}</p>
+        <h1 style="font-size: 32px; font-weight: 600;">System Overview</h1>
+        <p style="font-size: 14px; margin-top: 5px;">Administrator: {{ user.name }}</p>
     </div>
 </div>
 
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-card-label">Model Precision</div>
-        <div class="stat-card-value">{{ "%.1f"|format(precision) }}%</div>
-        <div class="stat-card-subtext">Alert Accuracy</div>
+<div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 30px;">
+    <div class="stat-card" style="padding: 25px;">
+        <div class="stat-card-label" style="margin-bottom: 10px;">Alert Accuracy (Precision)</div>
+        <div class="stat-card-value" style="color: var(--primary); font-size: 42px;">{{ "%.1f"|format(precision) }}%</div>
+        <div class="stat-card-subtext" style="margin-top: 10px; font-size: 12px;">Out of all the alerts we sent, this is how many were real threats.</div>
     </div>
-    <div class="stat-card">
-        <div class="stat-card-label">Model Recall</div>
-        <div class="stat-card-value">{{ "%.1f"|format(recall) }}%</div>
-        <div class="stat-card-subtext">Threat Coverage</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card-label">True Positives</div>
-        <div class="stat-card-value" style="color: var(--low);">{{ tp }}</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card-label">False Positives</div>
-        <div class="stat-card-value" style="color: var(--high);">{{ fp }}</div>
+    <div class="stat-card" style="padding: 25px;">
+        <div class="stat-card-label" style="margin-bottom: 10px;">Threat Coverage (Recall)</div>
+        <div class="stat-card-value" style="color: var(--low); font-size: 42px;">{{ "%.1f"|format(recall) }}%</div>
+        <div class="stat-card-subtext" style="margin-top: 10px; font-size: 12px;">Out of all the actual attacks, this is how many we successfully caught.</div>
     </div>
 </div>
 
-<div style="background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(44, 30, 22, 0.04);">
-    <h2 style="font-family: 'Playfair Display', serif; font-size: 28px; margin-bottom: 30px;">Model Drift Monitor</h2>
-    <div style="height: 300px;">
+<div class="chart-container" style="padding: 30px;">
+    <h2 style="font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 5px;">Model Drift Monitor</h2>
+    <p style="font-size: 13px; color: var(--muted); margin-bottom: 20px;">Is the model getting better or worse over time? If the line drops, it's time to retrain.</p>
+    <div style="height: 250px;">
         <canvas id="driftChart"></canvas>
     </div>
 </div>
@@ -46,17 +39,29 @@
     new Chart(driftCtx, {
         type: 'line',
         data: {
-            labels: ['Batch 1', 'Batch 2', 'Batch 3', 'Batch 4', 'Batch 5'],
+            labels: {{ drift_labels | tojson }},
             datasets: [{
                 label: 'F1-Score',
-                data: [0.85, 0.83, 0.80, 0.72, 0.65],
+                data: {{ drift_data | tojson }},
                 borderColor: '#FF6B4A',
                 backgroundColor: driftGradient,
                 tension: 0.4, fill: true, borderWidth: 3,
-                pointRadius: 6, pointBackgroundColor: '#FF6B4A', pointBorderColor: '#fff'
+                pointRadius: 4, pointBackgroundColor: '#FF6B4A', pointBorderColor: '#fff'
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        options: { 
+            animation: false,
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { 
+                    min: 0, max: 1,
+                    grid: { color: '#F3EDE8' } 
+                },
+                x: { grid: { display: false } }
+            }
+        }
     });
 </script>
 {% endblock %}
