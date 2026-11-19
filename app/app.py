@@ -73,9 +73,10 @@ def register():
             conn.commit()
             flash("Account created! Please log in.", "success")
             return redirect(url_for("login"))
-            
+        
         except psycopg2.errors.UniqueViolation:
             conn.rollback()
+            app.logger.warning("Duplicate email registration blocked: %s", email)
             flash("Email already exists. Please log in.", "error")
         except Exception as e:
             conn.rollback()
